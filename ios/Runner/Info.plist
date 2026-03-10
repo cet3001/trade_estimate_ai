@@ -69,9 +69,18 @@
 	<key>CFBundleURLTypes</key>
 	<array>
 		<dict>
+			<key>CFBundleURLName</key>
+			<string>com.blackstonerow.tradeEstimateAi.auth</string>
 			<key>CFBundleURLSchemes</key>
 			<array>
 				<string>tradeestimateai</string>
+			</array>
+		</dict>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>com.blackstonerow.tradeEstimateAi</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
 				<string>com.blackstonerow.tradeEstimateAi</string>
 			</array>
 		</dict>

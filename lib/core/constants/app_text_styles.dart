@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'app_colors.dart';
-import 'app_spacing.dart';
 
 class AppTextStyles {
   static final heroNumber = GoogleFonts.jetBrainsMono(
@@ -15,7 +14,7 @@ class AppTextStyles {
     color: AppColors.positive,
   );
   static final totalAmountSmall = totalAmount.copyWith(
-    fontSize: AppSpacing.lg,
+    fontSize: 15.0,  // intentionally smaller than totalAmount (20 pt) for list rows
   );
   static final heading1 = GoogleFonts.inter(
     fontSize: 22,
