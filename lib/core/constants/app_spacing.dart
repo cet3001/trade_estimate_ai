@@ -23,7 +23,7 @@ class AppSpacing {
   static const double tradeTileCheckIconSize = 14.0;
   static const double tradeTileEmojiSize = 36.0;
   static const double stepIndicatorDotSize = 8.0;
-  static const double stepIndicatorDotActivSize = 10.0;
+  static const double stepIndicatorDotActiveSize = 10.0;
   static const double costSummaryDividerThickness = 1.0;
   static const double tradeIconBadgeSize = 40.0;
   static const double tileBorderWidth = 1.0;       // unselected tile border

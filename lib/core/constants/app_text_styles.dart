@@ -39,4 +39,8 @@ class AppTextStyles {
     color: AppColors.textSecondary,
     letterSpacing: 0.4,
   );
+  static final sectionLabel = label.copyWith(
+    color: AppColors.textSecondary,
+    letterSpacing: 0.8,
+  );
 }

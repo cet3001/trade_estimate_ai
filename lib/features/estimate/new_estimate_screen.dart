@@ -2,14 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:form_builder_validators/form_builder_validators.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_spacing.dart';
 import '../../core/constants/app_text_styles.dart';
 import '../../core/constants/trade_templates.dart';
 import '../../core/models/entitlements.dart';
-import '../../core/models/estimate.dart';
 import '../../core/models/user_profile.dart';
 import '../../core/services/supabase_service.dart';
 import '../../core/utils/formatters.dart';
@@ -220,24 +218,12 @@ class _NewEstimateScreenState extends State<NewEstimateScreen> {
         'licenseNumber': _profile?.licenseNumber ?? '',
       };
 
-      final response = await Supabase.instance.client.functions
-          .invoke('generate-estimate', body: body);
+      final estimate = await _service.generateEstimate(body);
 
       if (!mounted) return;
-
-      // Extract the estimate from the response data
-      final data = response.data as Map<String, dynamic>?;
-      if (data == null) {
-        throw Exception('Empty response from generate-estimate');
-      }
-
-      // Try to parse as Estimate — the function returns the saved row
-      final estimateJson = data['estimate'] as Map<String, dynamic>? ?? data;
-      final estimate = Estimate.fromJson(estimateJson);
 
       setState(() => _isGenerating = false);
 
-      if (!mounted) return;
       Navigator.of(context).pushReplacementNamed(
         '/estimate/preview',
         arguments: estimate,
@@ -423,10 +409,10 @@ class _NewEstimateScreenState extends State<NewEstimateScreen> {
             duration: const Duration(milliseconds: 200),
             margin: const EdgeInsets.symmetric(horizontal: AppSpacing.xs),
             width: isActive
-                ? AppSpacing.stepIndicatorDotActivSize
+                ? AppSpacing.stepIndicatorDotActiveSize
                 : AppSpacing.stepIndicatorDotSize,
             height: isActive
-                ? AppSpacing.stepIndicatorDotActivSize
+                ? AppSpacing.stepIndicatorDotActiveSize
                 : AppSpacing.stepIndicatorDotSize,
             decoration: BoxDecoration(
               color: i <= _step ? AppColors.positive : AppColors.surfaceElevated,
@@ -582,7 +568,7 @@ class _NewEstimateScreenState extends State<NewEstimateScreen> {
       FormBuilderDropdown<String>(
         name: 'work_type',
         decoration: _fieldDecoration('Type of Work'),
-        items: ['Repair', 'New Install', 'Replacement', 'Inspection']
+        items: TradeTemplates.workTypes[TradeType.plumbing]!
             .map((s) => DropdownMenuItem(value: s, child: Text(s, style: AppTextStyles.body)))
             .toList(),
         validator: FormBuilderValidators.required(
@@ -614,7 +600,7 @@ class _NewEstimateScreenState extends State<NewEstimateScreen> {
       FormBuilderDropdown<String>(
         name: 'work_type',
         decoration: _fieldDecoration('Type of Work'),
-        items: ['Panel Upgrade', 'New Circuits', 'Repair', 'EV Charger', 'Whole Home Rewire']
+        items: TradeTemplates.workTypes[TradeType.electrical]!
             .map((s) => DropdownMenuItem(value: s, child: Text(s, style: AppTextStyles.body)))
             .toList(),
         validator: FormBuilderValidators.required(
@@ -646,7 +632,7 @@ class _NewEstimateScreenState extends State<NewEstimateScreen> {
       FormBuilderDropdown<String>(
         name: 'work_type',
         decoration: _fieldDecoration('Type of Work'),
-        items: ['Full Replacement', 'Repair', 'Inspection', 'Gutters', 'Flashing']
+        items: TradeTemplates.workTypes[TradeType.roofing]!
             .map((s) => DropdownMenuItem(value: s, child: Text(s, style: AppTextStyles.body)))
             .toList(),
         validator: FormBuilderValidators.required(
@@ -694,7 +680,7 @@ class _NewEstimateScreenState extends State<NewEstimateScreen> {
       FormBuilderDropdown<String>(
         name: 'work_type',
         decoration: _fieldDecoration('Project Type'),
-        items: ['Addition', 'Remodel', 'New Build', 'Demo', 'Framing', 'Drywall', 'Other']
+        items: TradeTemplates.workTypes[TradeType.construction]!
             .map((s) => DropdownMenuItem(value: s, child: Text(s, style: AppTextStyles.body)))
             .toList(),
         validator: FormBuilderValidators.required(
@@ -726,13 +712,7 @@ class _NewEstimateScreenState extends State<NewEstimateScreen> {
   }
 
   Widget _buildSectionLabel(String text) {
-    return Text(
-      text,
-      style: AppTextStyles.label.copyWith(
-        color: AppColors.textSecondary,
-        letterSpacing: 0.8,
-      ),
-    );
+    return Text(text, style: AppTextStyles.sectionLabel);
   }
 
   // ---------------------------------------------------------------------------
@@ -854,10 +834,7 @@ class _NewEstimateScreenState extends State<NewEstimateScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Live Summary', style: AppTextStyles.label.copyWith(
-            color: AppColors.textSecondary,
-            letterSpacing: 0.8,
-          )),
+          Text('Live Summary', style: AppTextStyles.sectionLabel),
           const SizedBox(height: AppSpacing.md),
           _summaryRow(
             'Labor',
@@ -988,10 +965,7 @@ class _NewEstimateScreenState extends State<NewEstimateScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Cost Breakdown', style: AppTextStyles.label.copyWith(
-                color: AppColors.textSecondary,
-                letterSpacing: 0.8,
-              )),
+              Text('Cost Breakdown', style: AppTextStyles.sectionLabel),
               const SizedBox(height: AppSpacing.md),
               _summaryRow(
                 'Labor',
@@ -1085,10 +1059,7 @@ class _NewEstimateScreenState extends State<NewEstimateScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(title, style: AppTextStyles.label.copyWith(
-            color: AppColors.textSecondary,
-            letterSpacing: 0.8,
-          )),
+          Text(title, style: AppTextStyles.sectionLabel),
           const SizedBox(height: AppSpacing.md),
           ...rows.map((row) => Padding(
             padding: const EdgeInsets.only(bottom: AppSpacing.sm),
@@ -1170,7 +1141,7 @@ class _TradeTileState extends State<_TradeTile>
       reverseDuration: const Duration(milliseconds: 150),
       lowerBound: 0.0,
       upperBound: 1.0,
-      value: 1.0,
+      value: 0.0,
     );
     _scaleAnim = Tween<double>(begin: 1.0, end: 0.96).animate(
       CurvedAnimation(parent: _scaleController, curve: Curves.easeIn),
@@ -1299,7 +1270,7 @@ class _ScaleButtonState extends State<_ScaleButton>
       reverseDuration: const Duration(milliseconds: 150),
       lowerBound: 0.0,
       upperBound: 1.0,
-      value: 1.0,
+      value: 0.0,
     );
     _scale = Tween<double>(begin: 1.0, end: 0.96).animate(
       CurvedAnimation(parent: _ctrl, curve: Curves.easeIn),

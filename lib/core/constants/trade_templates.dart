@@ -60,22 +60,18 @@ extension TradeTypeExtension on TradeType {
   }
 }
 
-/// Display metadata for a single trade.
+/// Display metadata for a single trade — delegates to [TradeTypeExtension].
 class TradeInfo {
   final TradeType type;
-  final String label;
-  final String emoji;
-  final Color color;
 
   /// String key for the trade (e.g. 'plumbing'), matching [TradeType.value].
   String get key => type.value;
 
-  const TradeInfo({
-    required this.type,
-    required this.label,
-    required this.emoji,
-    required this.color,
-  });
+  String get label => type.displayName;
+  String get emoji => type.emoji;
+  Color get color => type.color;
+
+  const TradeInfo({required this.type});
 }
 
 class TradeTemplates {
@@ -126,31 +122,11 @@ class TradeTemplates {
   };
 
   /// Ordered list of all trade display metadata.
-  static const List<TradeInfo> all = [
-    TradeInfo(
-      type: TradeType.plumbing,
-      label: 'Plumbing',
-      emoji: '🔧',
-      color: AppColors.plumbing,
-    ),
-    TradeInfo(
-      type: TradeType.electrical,
-      label: 'Electrical',
-      emoji: '⚡',
-      color: AppColors.electrical,
-    ),
-    TradeInfo(
-      type: TradeType.roofing,
-      label: 'Roofing',
-      emoji: '🏠',
-      color: AppColors.roofing,
-    ),
-    TradeInfo(
-      type: TradeType.construction,
-      label: 'Construction',
-      emoji: '🏗',
-      color: AppColors.construction,
-    ),
+  static final List<TradeInfo> all = [
+    TradeInfo(type: TradeType.plumbing),
+    TradeInfo(type: TradeType.electrical),
+    TradeInfo(type: TradeType.roofing),
+    TradeInfo(type: TradeType.construction),
   ];
 
   static TradeInfo byType(TradeType type) =>

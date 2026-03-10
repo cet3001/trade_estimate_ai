@@ -190,6 +190,18 @@ class SupabaseService {
         .eq('id', id);
   }
 
+  // Edge Functions
+  Future<Estimate> generateEstimate(Map<String, dynamic> body) async {
+    final response = await client.functions
+        .invoke('generate-estimate', body: body);
+    final data = response.data as Map<String, dynamic>?;
+    if (data == null) {
+      throw Exception('Empty response from generate-estimate');
+    }
+    final estimateJson = data['estimate'] as Map<String, dynamic>? ?? data;
+    return Estimate.fromJson(estimateJson);
+  }
+
   // Delete account
   Future<void> deleteAccount() async {
     final userId = currentUser?.id;
