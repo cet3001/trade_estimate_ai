@@ -91,7 +91,7 @@ class EstimateCard extends StatelessWidget {
       ),
       decoration: BoxDecoration(
         color: _statusColor.withValues(alpha: 0.15),
-        borderRadius: BorderRadius.circular(AppSpacing.sm - 2),
+        borderRadius: BorderRadius.circular(AppSpacing.cardBorderRadius),
       ),
       child: Text(
         _statusLabel,
@@ -111,12 +111,12 @@ class EstimateCard extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        width: 160,
+        width: AppSpacing.estimateCardCompactWidth,
         decoration: BoxDecoration(
           color: AppColors.surface,
           borderRadius: BorderRadius.circular(AppSpacing.md),
           border: Border(
-            left: BorderSide(color: _tradeColor, width: 3),
+            left: BorderSide(color: _tradeColor, width: AppSpacing.cardAccentBorderWidth),
             top: const BorderSide(color: AppColors.divider),
             right: const BorderSide(color: AppColors.divider),
             bottom: const BorderSide(color: AppColors.divider),
@@ -179,7 +179,7 @@ class EstimateCard extends StatelessWidget {
           color: AppColors.surface,
           borderRadius: BorderRadius.circular(AppSpacing.md),
           border: Border(
-            left: BorderSide(color: _tradeColor, width: 3),
+            left: BorderSide(color: _tradeColor, width: AppSpacing.cardAccentBorderWidth),
             top: const BorderSide(color: AppColors.divider),
             right: const BorderSide(color: AppColors.divider),
             bottom: const BorderSide(color: AppColors.divider),

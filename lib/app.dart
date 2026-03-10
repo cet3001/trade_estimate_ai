@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'core/constants/app_colors.dart';
+import 'core/constants/app_spacing.dart';
 import 'core/models/estimate.dart';
 import 'core/services/supabase_service.dart';
 import 'features/auth/auth_screen.dart';
@@ -43,15 +44,15 @@ class TradeEstimateApp extends StatelessWidget {
           filled: true,
           fillColor: AppColors.surface,
           border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(AppSpacing.md),
             borderSide: const BorderSide(color: AppColors.borderDefault),
           ),
           enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(AppSpacing.md),
             borderSide: const BorderSide(color: AppColors.borderDefault),
           ),
           focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(AppSpacing.md),
             borderSide: const BorderSide(color: AppColors.borderActive, width: 2),
           ),
           labelStyle: const TextStyle(color: AppColors.textSecondary),
@@ -88,16 +89,15 @@ class TradeEstimateApp extends StatelessWidget {
           );
         }
         if (settings.name == '/estimate/preview') {
-          // HomeScreen passes an Estimate object; other callers may pass a
-          // String id for backwards compatibility.
           final arg = settings.arguments;
-          final estimateId = arg is Estimate
-              ? arg.id
-              : (arg is String ? arg : '');
+          if (arg is Estimate) {
+            return MaterialPageRoute(
+              builder: (context) => EstimatePreviewScreen(estimate: arg),
+            );
+          }
+          final estimateId = arg is String ? arg : '';
           return MaterialPageRoute(
-            builder: (context) => EstimatePreviewScreen(
-              estimateId: estimateId,
-            ),
+            builder: (context) => EstimatePreviewScreen(estimateId: estimateId),
           );
         }
         return null;

@@ -8,4 +8,11 @@ class AppSpacing {
   static const double xxxl = 32.0;
   static const double huge = 48.0;
   static const double buttonHeight = 52.0;
+
+  // Card / widget-specific constants
+  static const double recentEstimatesListHeight = 196.0;
+  static const double emptyStateInlineHeight = 80.0;
+  static const double estimateCardCompactWidth = 160.0;
+  static const double cardAccentBorderWidth = 3.0;
+  static const double cardBorderRadius = 6.0;
 }

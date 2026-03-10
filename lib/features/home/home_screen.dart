@@ -294,7 +294,7 @@ class _HomeScreenState extends State<HomeScreen> {
       return _buildEmptyInline('No estimates yet');
     }
     return SizedBox(
-      height: 196,
+      height: AppSpacing.recentEstimatesListHeight,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
         itemCount: _recentEstimates.length,
@@ -343,7 +343,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _buildEmptyInline(String message) {
     return SizedBox(
-      height: 80,
+      height: AppSpacing.emptyStateInlineHeight,
       child: Center(
         child: Text(message, style: AppTextStyles.caption),
       ),
