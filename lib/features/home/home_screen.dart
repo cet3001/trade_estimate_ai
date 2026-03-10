@@ -117,18 +117,27 @@ class _HomeScreenState extends State<HomeScreen> {
       elevation: 0,
       title: Text('Trade Estimate AI', style: AppTextStyles.heading2),
       actions: [
-        GestureDetector(
-          onTap: _openSettings,
-          child: Padding(
-            padding: const EdgeInsets.only(right: AppSpacing.lg),
-            child: CircleAvatar(
-              radius: AppSpacing.xl,
-              backgroundColor: AppColors.surfaceElevated,
-              child: Text(
-                initials,
-                style: AppTextStyles.label.copyWith(
-                  color: AppColors.textPrimary,
-                  fontWeight: FontWeight.w700,
+        Padding(
+          padding: const EdgeInsets.only(right: AppSpacing.lg),
+          child: Material(
+            color: Colors.transparent,
+            shape: const CircleBorder(),
+            clipBehavior: Clip.antiAlias,
+            child: InkWell(
+              customBorder: const CircleBorder(),
+              onTap: _openSettings,
+              child: Padding(
+                padding: const EdgeInsets.all(AppSpacing.xs),
+                child: CircleAvatar(
+                  radius: AppSpacing.xl,
+                  backgroundColor: AppColors.surfaceElevated,
+                  child: Text(
+                    initials,
+                    style: AppTextStyles.label.copyWith(
+                      color: AppColors.textPrimary,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
                 ),
               ),
             ),

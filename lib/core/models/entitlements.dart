@@ -12,14 +12,6 @@ class Entitlements {
     required this.creditsRemaining,
   });
 
-  factory Entitlements.fromProfile(Map<String, dynamic> profile) {
-    return Entitlements(
-      hasActiveSubscription:
-          profile['subscription_status'] == 'active',
-      creditsRemaining: (profile['credits_remaining'] as int?) ?? 0,
-    );
-  }
-
   factory Entitlements.fromUserProfile(UserProfile profile) {
     return Entitlements(
       hasActiveSubscription: profile.subscriptionStatus == 'active',

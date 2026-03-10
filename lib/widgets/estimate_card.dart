@@ -113,7 +113,7 @@ class EstimateCard extends StatelessWidget {
           width: AppSpacing.estimateCardCompactWidth,
           decoration: BoxDecoration(
             color: AppColors.surface,
-            borderRadius: BorderRadius.circular(AppSpacing.md),
+            borderRadius: BorderRadius.circular(AppSpacing.cardBorderRadius),
             border: Border(
               left: BorderSide(color: _tradeColor, width: AppSpacing.cardAccentBorderWidth),
               top: const BorderSide(color: AppColors.divider),
@@ -181,7 +181,7 @@ class EstimateCard extends StatelessWidget {
         child: Container(
           decoration: BoxDecoration(
             color: AppColors.surface,
-            borderRadius: BorderRadius.circular(AppSpacing.md),
+            borderRadius: BorderRadius.circular(AppSpacing.cardBorderRadius),
             border: Border(
               left: BorderSide(color: _tradeColor, width: AppSpacing.cardAccentBorderWidth),
               top: const BorderSide(color: AppColors.divider),
