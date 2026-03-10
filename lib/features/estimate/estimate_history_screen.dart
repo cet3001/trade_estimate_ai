@@ -832,7 +832,7 @@ class _EstimateListTile extends StatelessWidget {
                     const Spacer(),
                     Text(
                       Formatters.currency(total),
-                      style: AppTextStyles.totalAmount.copyWith(fontSize: 15),
+                      style: AppTextStyles.totalAmountSmall,
                     ),
                   ],
                 ),
