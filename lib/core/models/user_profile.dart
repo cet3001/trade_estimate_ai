@@ -10,6 +10,7 @@ class UserProfile {
   final int creditsRemaining;
   final int totalEstimatesGenerated;
   final double? defaultLaborRate;
+  final String? defaultTrade;
   final DateTime createdAt;
   final DateTime updatedAt;
 
@@ -25,6 +26,7 @@ class UserProfile {
     this.creditsRemaining = 0,
     this.totalEstimatesGenerated = 0,
     this.defaultLaborRate,
+    this.defaultTrade,
     required this.createdAt,
     required this.updatedAt,
   });
@@ -44,6 +46,7 @@ class UserProfile {
       totalEstimatesGenerated:
           (json['total_estimates_generated'] as int?) ?? 0,
       defaultLaborRate: (json['default_labor_rate'] as num?)?.toDouble(),
+      defaultTrade: json['default_trade'] as String?,
       createdAt: DateTime.parse(json['created_at'] as String),
       updatedAt: DateTime.parse(json['updated_at'] as String),
     );
@@ -62,6 +65,7 @@ class UserProfile {
       'credits_remaining': creditsRemaining,
       'total_estimates_generated': totalEstimatesGenerated,
       'default_labor_rate': defaultLaborRate,
+      'default_trade': defaultTrade,
       'created_at': createdAt.toIso8601String(),
       'updated_at': updatedAt.toIso8601String(),
     };
@@ -78,6 +82,7 @@ class UserProfile {
     int? creditsRemaining,
     int? totalEstimatesGenerated,
     double? defaultLaborRate,
+    String? defaultTrade,
   }) {
     return UserProfile(
       id: id,
@@ -92,6 +97,7 @@ class UserProfile {
       totalEstimatesGenerated:
           totalEstimatesGenerated ?? this.totalEstimatesGenerated,
       defaultLaborRate: defaultLaborRate ?? this.defaultLaborRate,
+      defaultTrade: defaultTrade ?? this.defaultTrade,
       createdAt: createdAt,
       updatedAt: DateTime.now(),
     );

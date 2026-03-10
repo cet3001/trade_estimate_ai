@@ -67,7 +67,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         _nameController.text = profile?.fullName ?? '';
         final rate = profile?.defaultLaborRate;
         _labourRateController.text = rate != null ? rate.toStringAsFixed(2) : '';
-        _selectedTrade = _tradeFromString(profile?.toJson()['default_trade'] as String?);
+        _selectedTrade = _tradeFromString(profile?.defaultTrade);
         _loadingProfile = false;
       });
     } catch (_) {
@@ -153,9 +153,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   Future<void> _openSubscriptionManagement() async {
     final uri = Uri.parse('https://apps.apple.com/account/subscriptions');
-    if (await canLaunchUrl(uri)) {
-      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    final canLaunch = await canLaunchUrl(uri);
+    if (!mounted) return;
+    if (!canLaunch) {
+      _showSnackError('Unable to open subscription settings. Please manage your subscription in the App Store app.');
+      return;
     }
+    await launchUrl(uri, mode: LaunchMode.externalApplication);
   }
 
   void _openPaywall() {
@@ -209,16 +213,20 @@ class _SettingsScreenState extends State<SettingsScreen> {
     setState(() => _deletingAccount = true);
     try {
       await _service.deleteAccount();
-      // deleteAccount() calls the RPC which removes auth.users; sign out
-      // cleans up local session state.
-      await _service.signOut();
-      if (!mounted) return;
-      Navigator.of(context).pushNamedAndRemoveUntil('/auth', (_) => false);
     } catch (e) {
       if (!mounted) return;
       setState(() => _deletingAccount = false);
       _showSnackError('Account deletion failed. Please try again.');
+      return;
     }
+    // RPC succeeded — best-effort sign out, always navigate to /auth.
+    try {
+      await _service.signOut();
+    } catch (_) {
+      // Session already invalidated server-side; ignore sign-out errors.
+    }
+    if (!mounted) return;
+    Navigator.of(context).pushNamedAndRemoveUntil('/auth', (_) => false);
   }
 
   Future<bool> _showConfirmDialog({
