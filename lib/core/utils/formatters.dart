@@ -9,6 +9,7 @@ class Formatters {
 
   static final _dateFormatter = DateFormat('MMM d, yyyy');
   static final _shortDateFormatter = DateFormat('M/d/yy');
+  static final _cardDateFormat = DateFormat('MMM d');
 
   static String currency(double? amount) {
     if (amount == null) return '\$0.00';
@@ -24,6 +25,8 @@ class Formatters {
     if (date == null) return '';
     return _shortDateFormatter.format(date);
   }
+
+  static String cardDate(DateTime date) => _cardDateFormat.format(date);
 
   static String laborCost(double? hours, double? rate) {
     if (hours == null || rate == null) return '\$0.00';

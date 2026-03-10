@@ -29,42 +29,47 @@ class CreditBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.lg,
-          vertical: AppSpacing.md,
-        ),
-        decoration: BoxDecoration(
-          color: _badgeColor.withValues(alpha: 0.10),
-          borderRadius: BorderRadius.circular(AppSpacing.md),
-          border: Border.all(color: _badgeColor.withValues(alpha: 0.40)),
-        ),
-        child: Row(
-          children: [
-            Container(
-              width: AppSpacing.sm,
-              height: AppSpacing.sm,
-              decoration: BoxDecoration(
-                color: _badgeColor,
-                shape: BoxShape.circle,
+    return Material(
+      color: Colors.transparent,
+      borderRadius: BorderRadius.circular(AppSpacing.cardBorderRadius),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: onTap,
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.lg,
+            vertical: AppSpacing.md,
+          ),
+          decoration: BoxDecoration(
+            color: _badgeColor.withValues(alpha: 0.10),
+            borderRadius: BorderRadius.circular(AppSpacing.md),
+            border: Border.all(color: _badgeColor.withValues(alpha: 0.40)),
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: AppSpacing.sm,
+                height: AppSpacing.sm,
+                decoration: BoxDecoration(
+                  color: _badgeColor,
+                  shape: BoxShape.circle,
+                ),
               ),
-            ),
-            const SizedBox(width: AppSpacing.sm),
-            Expanded(
-              child: Text(
-                _badgeText,
-                style: AppTextStyles.body.copyWith(color: _badgeColor),
+              const SizedBox(width: AppSpacing.sm),
+              Expanded(
+                child: Text(
+                  _badgeText,
+                  style: AppTextStyles.body.copyWith(color: _badgeColor),
+                ),
               ),
-            ),
-            const Icon(
-              Icons.chevron_right,
-              color: AppColors.textSecondary,
-              size: AppSpacing.xl,
-            ),
-          ],
+              const Icon(
+                Icons.chevron_right,
+                color: AppColors.textSecondary,
+                size: AppSpacing.xl,
+              ),
+            ],
+          ),
         ),
       ),
     );

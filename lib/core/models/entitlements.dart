@@ -1,3 +1,5 @@
+import 'user_profile.dart';
+
 class Entitlements {
   final bool hasActiveSubscription;
   final int creditsRemaining;
@@ -15,6 +17,13 @@ class Entitlements {
       hasActiveSubscription:
           profile['subscription_status'] == 'active',
       creditsRemaining: (profile['credits_remaining'] as int?) ?? 0,
+    );
+  }
+
+  factory Entitlements.fromUserProfile(UserProfile profile) {
+    return Entitlements(
+      hasActiveSubscription: profile.subscriptionStatus == 'active',
+      creditsRemaining: profile.creditsRemaining,
     );
   }
 

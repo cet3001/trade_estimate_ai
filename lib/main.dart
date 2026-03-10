@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'app.dart';
 import 'core/constants/env.dart';
@@ -6,6 +7,11 @@ import 'core/services/iap_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
+    statusBarBrightness: Brightness.dark,
+    statusBarIconBrightness: Brightness.light,
+  ));
 
   // Read the env vars
   final supabaseUrl = Env.supabaseUrl;

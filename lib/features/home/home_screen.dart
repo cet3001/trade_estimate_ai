@@ -17,6 +17,7 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+  // Singleton — factory always returns the same instance
   final _service = SupabaseService();
 
   bool _loading = true;
@@ -24,6 +25,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   UserProfile? _profile;
   List<Estimate> _estimates = [];
+  List<Estimate> _recentEstimates = [];
 
   // ---------------------------------------------------------------------------
   // Lifecycle
@@ -36,7 +38,6 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _loadData() async {
-    if (!mounted) return;
     setState(() {
       _loading = true;
       _error = null;
@@ -51,12 +52,14 @@ class _HomeScreenState extends State<HomeScreen> {
       setState(() {
         _profile = results[0] as UserProfile?;
         _estimates = results[1] as List<Estimate>;
+        _recentEstimates = _estimates.take(5).toList();
         _loading = false;
       });
     } catch (e) {
+      debugPrint('HomeScreen._loadData error: $e');
       if (!mounted) return;
       setState(() {
-        _error = e.toString();
+        _error = 'Something went wrong. Please check your connection and try again.';
         _loading = false;
       });
     }
@@ -68,14 +71,8 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Entitlements get _entitlements {
     if (_profile == null) return Entitlements.empty;
-    return Entitlements(
-      hasActiveSubscription: _profile!.subscriptionStatus == 'active',
-      creditsRemaining: _profile!.creditsRemaining,
-    );
+    return Entitlements.fromUserProfile(_profile!);
   }
-
-  List<Estimate> get _recentEstimates =>
-      _estimates.take(5).toList();
 
   // ---------------------------------------------------------------------------
   // Navigation helpers
@@ -274,7 +271,7 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ),
         child: Text(
-          '\uFF0B New Estimate',
+          '+ New Estimate',
           style: AppTextStyles.heading2.copyWith(color: AppColors.textPrimary),
         ),
       ),
@@ -323,7 +320,7 @@ class _HomeScreenState extends State<HomeScreen> {
       // Nested inside the outer ListView — disable scrolling so it renders
       // as a static list inside the scroll view.
       physics: const NeverScrollableScrollPhysics(),
-      shrinkWrap: true,
+      shrinkWrap: true, // TODO: add server-side pagination when estimate counts grow
       itemCount: _estimates.length,
       separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.sm),
       itemBuilder: (context, index) {
@@ -376,7 +373,7 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
           const SizedBox(height: AppSpacing.sm),
           Text(
-            'Tap \u201C\uFF0B New Estimate\u201D to create your first one.',
+            'Tap \u201C+ New Estimate\u201D to create your first one.',
             style: AppTextStyles.caption,
             textAlign: TextAlign.center,
           ),

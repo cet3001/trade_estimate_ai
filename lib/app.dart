@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'core/constants/app_colors.dart';
 import 'core/constants/app_spacing.dart';
@@ -19,11 +18,6 @@ class TradeEstimateApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
-      statusBarBrightness: Brightness.dark,
-      statusBarIconBrightness: Brightness.light,
-    ));
-
     return MaterialApp(
       title: 'Trade Estimate AI',
       debugShowCheckedModeBanner: false,
