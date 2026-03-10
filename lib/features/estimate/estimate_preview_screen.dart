@@ -3,6 +3,7 @@ import 'package:share_plus/share_plus.dart';
 
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_spacing.dart';
+import '../../core/constants/app_strings.dart';
 import '../../core/constants/app_text_styles.dart';
 import '../../core/models/estimate.dart';
 import '../../core/models/user_profile.dart';
@@ -22,11 +23,14 @@ class EstimatePreviewScreen extends StatefulWidget {
   /// Fallback: fetch the estimate by ID when [estimate] is not provided.
   final String estimateId;
 
-  const EstimatePreviewScreen({
+  EstimatePreviewScreen({
     super.key,
     this.estimate,
     this.estimateId = '',
-  });
+  }) : assert(
+          estimate != null || estimateId.isNotEmpty,
+          'EstimatePreviewScreen requires either an estimate object or a non-empty estimateId',
+        );
 
   @override
   State<EstimatePreviewScreen> createState() => _EstimatePreviewScreenState();
@@ -114,7 +118,8 @@ class _EstimatePreviewScreenState extends State<EstimatePreviewScreen> {
     setState(() => _isSaving = true);
 
     try {
-      await SupabaseService().updateEstimateBody(
+      final service = SupabaseService();
+      await service.updateEstimateBody(
         estimate.id,
         _bodyController.text,
       );
@@ -150,12 +155,13 @@ class _EstimatePreviewScreenState extends State<EstimatePreviewScreen> {
 
       // Upload to Supabase Storage and update pdf_url
       try {
+        final service = SupabaseService();
         final bytes = await file.readAsBytes();
-        final url = await SupabaseService().uploadEstimatePdf(
+        final url = await service.uploadEstimatePdf(
           estimateId: estimate.id,
           bytes: bytes,
         );
-        await SupabaseService().updateEstimatePdfUrl(estimate.id, url);
+        await service.updateEstimatePdfUrl(estimate.id, url);
 
         if (mounted) {
           setState(() {
@@ -202,13 +208,14 @@ class _EstimatePreviewScreenState extends State<EstimatePreviewScreen> {
     setState(() => _isEmailLoading = true);
 
     try {
+      final service = SupabaseService();
       await EmailService().sendEstimateToClient(
         estimateId: estimate.id,
         recipientEmail: recipientEmail,
         recipientName: estimate.clientName ?? '',
       );
 
-      await SupabaseService().updateEstimateStatus(estimate.id, 'sent');
+      await service.updateEstimateStatus(estimate.id, 'sent');
 
       if (!mounted) return;
       setState(() {
@@ -216,13 +223,13 @@ class _EstimatePreviewScreenState extends State<EstimatePreviewScreen> {
           status: 'sent',
           sentAt: DateTime.now(),
         );
-        _isEmailLoading = false;
       });
       _showSnackBar('Sent!', isSuccess: true);
     } catch (e) {
       if (!mounted) return;
-      setState(() => _isEmailLoading = false);
       _showSnackBar('Failed to send. Please try again.', isSuccess: false);
+    } finally {
+      if (mounted) setState(() => _isEmailLoading = false);
     }
   }
 
@@ -361,6 +368,12 @@ class _EstimatePreviewScreenState extends State<EstimatePreviewScreen> {
       centerTitle: true,
       actions: [
         if (_estimate != null)
+          IconButton(
+            icon: const Icon(Icons.share_outlined, color: AppColors.textPrimary),
+            onPressed: anyLoading ? null : _handleDownloadPdf,
+            tooltip: 'Share',
+          ),
+        if (_estimate != null)
           Padding(
             padding: const EdgeInsets.only(right: AppSpacing.sm),
             child: Material(
@@ -378,7 +391,7 @@ class _EstimatePreviewScreenState extends State<EstimatePreviewScreen> {
                           width: AppSpacing.xl,
                           height: AppSpacing.xl,
                           child: CircularProgressIndicator(
-                            strokeWidth: 2,
+                            strokeWidth: AppSpacing.progressStrokeWidth,
                             valueColor: AlwaysStoppedAnimation<Color>(AppColors.accent),
                           ),
                         )
@@ -448,7 +461,7 @@ class _EstimatePreviewScreenState extends State<EstimatePreviewScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('PREPARED FOR', style: AppTextStyles.sectionLabel),
+        Text('PREPARED FOR:', style: AppTextStyles.sectionLabel),
         const SizedBox(height: AppSpacing.sm),
         Text(estimate.clientName ?? '—', style: AppTextStyles.heading2),
         if (estimate.clientEmail != null && estimate.clientEmail!.isNotEmpty) ...[
@@ -635,7 +648,7 @@ class _EstimatePreviewScreenState extends State<EstimatePreviewScreen> {
         ),
         Text(
           Formatters.currency(amount),
-          style: AppTextStyles.body.copyWith(fontFeatures: const []),
+          style: AppTextStyles.body,
         ),
       ],
     );
@@ -650,13 +663,7 @@ class _EstimatePreviewScreenState extends State<EstimatePreviewScreen> {
         _profile?.fullName ??
         'Your Business';
 
-    final terms =
-        'This estimate is valid for 30 days from the date above. Prices are subject '
-        'to change if the scope of work changes. A deposit of 50% is required before '
-        'work begins, with the balance due upon completion. This estimate does not '
-        'include any permits unless explicitly stated. $businessName is not responsible '
-        'for unforeseen conditions discovered during the work that require additional '
-        'materials or labor.';
+    final terms = AppStrings.standardTradeTerms.replaceAll('[Business Name]', businessName);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -778,7 +785,7 @@ class _ActionButton extends StatelessWidget {
                   width: AppSpacing.xl,
                   height: AppSpacing.xl,
                   child: CircularProgressIndicator(
-                    strokeWidth: 2,
+                    strokeWidth: AppSpacing.progressStrokeWidth,
                     valueColor: AlwaysStoppedAnimation<Color>(textColor),
                   ),
                 )

@@ -212,7 +212,10 @@ class SupabaseService {
           ),
         );
 
-    return client.storage.from('estimates').getPublicUrl(storagePath);
+    final signedUrlResponse = await client.storage
+        .from('estimates')
+        .createSignedUrl(storagePath, 31536000); // 1 year in seconds
+    return signedUrlResponse;
   }
 
   // Edge Functions

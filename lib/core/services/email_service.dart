@@ -21,8 +21,9 @@ class EmailService {
       },
     );
 
-    if (response.data == null) {
-      throw Exception('Failed to send estimate email');
+    if (response.status != 200 || response.data == null) {
+      final errorMsg = response.data?['error'] ?? 'Unknown error';
+      throw Exception('Failed to send estimate email: HTTP ${response.status} — $errorMsg');
     }
   }
 }

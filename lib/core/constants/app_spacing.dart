@@ -33,4 +33,5 @@ class AppSpacing {
   static const double previewBodyLineHeight = 1.6;
   static const double previewTermsLineHeight = 1.5;
   static const double previewSnackBorderWidth = 1.0;
+  static const double progressStrokeWidth = 2.0;
 }
