@@ -40,7 +40,7 @@ class TradeSelectorTile extends StatelessWidget {
                 children: [
                   Text(
                     trade.emoji,
-                    style: const TextStyle(fontSize: 36),
+                    style: const TextStyle(fontSize: AppSpacing.tradeTileEmojiSize),
                   ),
                   const SizedBox(height: AppSpacing.sm),
                   Text(

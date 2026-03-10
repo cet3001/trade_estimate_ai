@@ -72,8 +72,11 @@
 			<key>CFBundleURLSchemes</key>
 			<array>
 				<string>tradeestimateai</string>
+				<string>com.blackstonerow.tradeEstimateAi</string>
 			</array>
 		</dict>
 	</array>
+	<key>NSCameraUsageDescription</key>
+	<string>Trade Estimate AI uses the camera to attach photos to your estimates.</string>
 </dict>
 </plist>

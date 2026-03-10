@@ -354,7 +354,7 @@ class _EstimatePreviewScreenState extends State<EstimatePreviewScreen> {
       backgroundColor: AppColors.background,
       elevation: 0,
       leading: Material(
-        color: Colors.transparent,
+        color: AppColors.transparent,
         child: InkWell(
           borderRadius: BorderRadius.circular(AppSpacing.xxl),
           onTap: () => Navigator.of(context).pop(),
@@ -377,7 +377,7 @@ class _EstimatePreviewScreenState extends State<EstimatePreviewScreen> {
           Padding(
             padding: const EdgeInsets.only(right: AppSpacing.sm),
             child: Material(
-              color: Colors.transparent,
+              color: AppColors.transparent,
               child: InkWell(
                 borderRadius: BorderRadius.circular(AppSpacing.sm),
                 onTap: anyLoading ? null : _toggleEditMode,

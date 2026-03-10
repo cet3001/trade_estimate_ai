@@ -30,7 +30,7 @@ class CreditBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: Colors.transparent,
+      color: AppColors.transparent,
       borderRadius: BorderRadius.circular(AppSpacing.cardBorderRadius),
       clipBehavior: Clip.antiAlias,
       child: InkWell(

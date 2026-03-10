@@ -371,7 +371,7 @@ class _NewEstimateScreenState extends State<NewEstimateScreen> {
         children: [
           if (_step > 0)
             Material(
-              color: Colors.transparent,
+              color: AppColors.transparent,
               borderRadius: BorderRadius.circular(AppSpacing.md),
               clipBehavior: Clip.antiAlias,
               child: InkWell(
@@ -397,7 +397,7 @@ class _NewEstimateScreenState extends State<NewEstimateScreen> {
             ),
           ),
           Material(
-            color: Colors.transparent,
+            color: AppColors.transparent,
             borderRadius: BorderRadius.circular(AppSpacing.md),
             clipBehavior: Clip.antiAlias,
             child: InkWell(
@@ -1204,7 +1204,7 @@ class _TradeTileState extends State<_TradeTile>
         width: AppSpacing.tradeTileSize,
         height: AppSpacing.tradeTileSize,
         child: Material(
-          color: Colors.transparent,
+          color: AppColors.transparent,
           borderRadius: BorderRadius.circular(AppSpacing.tradeTileBorderRadius),
           clipBehavior: Clip.antiAlias,
           child: InkWell(
@@ -1330,7 +1330,7 @@ class _ScaleButtonState extends State<_ScaleButton>
       builder: (context, child) =>
           Transform.scale(scale: _scale.value, child: child),
       child: Material(
-        color: Colors.transparent,
+        color: AppColors.transparent,
         borderRadius: BorderRadius.circular(AppSpacing.md),
         clipBehavior: Clip.antiAlias,
         child: InkWell(

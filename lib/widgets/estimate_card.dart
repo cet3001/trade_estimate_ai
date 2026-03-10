@@ -104,7 +104,7 @@ class EstimateCard extends StatelessWidget {
 
   Widget _buildCompact() {
     return Material(
-      color: Colors.transparent,
+      color: AppColors.transparent,
       borderRadius: BorderRadius.circular(AppSpacing.cardBorderRadius),
       clipBehavior: Clip.antiAlias,
       child: InkWell(
@@ -173,7 +173,7 @@ class EstimateCard extends StatelessWidget {
 
   Widget _buildFullWidth() {
     return Material(
-      color: Colors.transparent,
+      color: AppColors.transparent,
       borderRadius: BorderRadius.circular(AppSpacing.cardBorderRadius),
       clipBehavior: Clip.antiAlias,
       child: InkWell(
