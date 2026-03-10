@@ -231,11 +231,11 @@ class SupabaseService {
   }
 
   // Delete account
+  // Calls the delete_account() Postgres RPC (SECURITY DEFINER) which removes
+  // estimates, the profile row, and the auth.users entry in one transaction.
+  // The caller must sign out after this returns.
   Future<void> deleteAccount() async {
-    final userId = currentUser?.id;
-    if (userId == null) return;
-    // Deletes cascade via FK constraints
-    await client.from('profiles').delete().eq('id', userId);
-    await client.auth.signOut();
+    if (currentUser == null) return;
+    await client.rpc('delete_account');
   }
 }
