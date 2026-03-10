@@ -28,4 +28,9 @@ class AppSpacing {
   static const double tradeIconBadgeSize = 40.0;
   static const double tileBorderWidth = 1.0;       // unselected tile border
   static const double focusedBorderWidth = 2.0;    // focused/error field border
+
+  // Estimate Preview screen
+  static const double previewBodyLineHeight = 1.6;
+  static const double previewTermsLineHeight = 1.5;
+  static const double previewSnackBorderWidth = 1.0;
 }

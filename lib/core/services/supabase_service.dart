@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../constants/trade_templates.dart';
@@ -188,6 +190,29 @@ class SupabaseService {
         .from('estimates')
         .update({'pdf_url': url})
         .eq('id', id);
+  }
+
+  /// Upload [bytes] as a PDF to Supabase Storage and return the public URL.
+  /// Bucket: 'estimates', path: estimate-pdfs/{userId}/{estimateId}.pdf
+  Future<String> uploadEstimatePdf({
+    required String estimateId,
+    required Uint8List bytes,
+  }) async {
+    final userId = currentUser?.id;
+    if (userId == null) throw Exception('No authenticated user');
+
+    final storagePath = 'estimate-pdfs/$userId/$estimateId.pdf';
+
+    await client.storage.from('estimates').uploadBinary(
+          storagePath,
+          bytes,
+          fileOptions: const FileOptions(
+            contentType: 'application/pdf',
+            upsert: true,
+          ),
+        );
+
+    return client.storage.from('estimates').getPublicUrl(storagePath);
   }
 
   // Edge Functions
