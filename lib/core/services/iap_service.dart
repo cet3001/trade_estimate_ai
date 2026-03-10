@@ -89,20 +89,11 @@ class IapService extends ChangeNotifier {
     return _purchase(product, consumable: false);
   }
 
-  Future<bool> buyCredits5() async {
-    final product = getProduct(kCredits5);
+  Future<bool> buyCredits(int count) async {
+    final productId = count == 5 ? kCredits5 : kCredits15;
+    final product = getProduct(productId);
     if (product == null) {
-      _lastError = '5-credit pack not available';
-      notifyListeners();
-      return false;
-    }
-    return _purchase(product, consumable: true);
-  }
-
-  Future<bool> buyCredits15() async {
-    final product = getProduct(kCredits15);
-    if (product == null) {
-      _lastError = '15-credit pack not available';
+      _lastError = '$count-credit pack not available';
       notifyListeners();
       return false;
     }
