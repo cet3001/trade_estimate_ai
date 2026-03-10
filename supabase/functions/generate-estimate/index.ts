@@ -12,6 +12,15 @@
 import Anthropic from 'npm:@anthropic-ai/sdk';
 import { createClient } from 'npm:@supabase/supabase-js@2';
 
+function sanitizePromptField(s: unknown, maxLen: number): string {
+  if (typeof s !== 'string') return '';
+  return s
+    .trim()
+    .slice(0, maxLen)
+    .replace(/\n(system|assistant|human|user):/gi, ' ')
+    .replace(/\n---/g, ' ');
+}
+
 Deno.serve(async (req) => {
   try {
     // 1. Authenticate the request via JWT
@@ -111,6 +120,13 @@ Deno.serve(async (req) => {
       });
     }
 
+    if (!profile) {
+      return new Response(
+        JSON.stringify({ error: 'Profile not found. Please complete onboarding.' }),
+        { status: 404, headers: { 'Content-Type': 'application/json' } }
+      );
+    }
+
     const hasSubscription = profile?.subscription_status === 'active';
 
     // 8. Atomically deduct a credit (or skip for active subscribers).
@@ -137,20 +153,28 @@ Deno.serve(async (req) => {
     const laborTotal = (laborHours as number) * (laborRate as number);
     const totalEstimate = laborTotal + (materialsCost as number) + ((additionalFees as number) ?? 0);
 
+    const sBusinessName = sanitizePromptField(businessName, 100);
+    const sLicenseNumber = sanitizePromptField(licenseNumber, 50);
+    const sClientName = sanitizePromptField(clientName, 100);
+    const sJobTitle = sanitizePromptField(jobTitle, 200);
+    const sJobLocation = sanitizePromptField(jobLocation, 200);
+    const sJobDescription = sanitizePromptField(jobDescription, 1000);
+    const sNotes = sanitizePromptField(notes, 500);
+
     const prompt = `${tradeContexts[trade as string]}
 
 Write a professional written estimate for the following job. This will be sent directly to a client as a formal business document.
 
-Business: ${businessName}${licenseNumber ? ` | License #${licenseNumber}` : ''}
-Client: ${clientName}
-Job Title: ${jobTitle}
-Location: ${jobLocation ?? 'Not specified'}
+Business: ${sBusinessName}${sLicenseNumber ? ` | License #${sLicenseNumber}` : ''}
+Client: ${sClientName}
+Job Title: ${sJobTitle}
+Location: ${sJobLocation || 'Not specified'}
 Trade: ${(trade as string).charAt(0).toUpperCase() + (trade as string).slice(1)}
 
-Job Description: ${jobDescription}
+Job Description: ${sJobDescription}
 
 Scope Details:
-${Object.entries((scopeDetails as Record<string, unknown>) ?? {}).map(([k, v]) => `- ${k}: ${v}`).join('\n')}
+${Object.entries((scopeDetails as Record<string, unknown>) ?? {}).map(([k, v]) => `- ${k}: ${sanitizePromptField(v, 500)}`).join('\n')}
 
 Cost Breakdown:
 - Labor: ${laborHours} hours at $${laborRate}/hour = $${laborTotal.toFixed(2)}
@@ -158,7 +182,7 @@ Cost Breakdown:
 - Additional Fees: $${((additionalFees as number) ?? 0).toFixed(2)}
 - Total: $${totalEstimate.toFixed(2)}
 
-${notes ? `Notes/Exclusions: ${notes}` : ''}
+${sNotes ? `Notes/Exclusions: ${sNotes}` : ''}
 
 Write the estimate body only. Do not include the cost table (that will be added separately). Do not include headers like "Estimate" or "Scope of Work". Write in flowing professional paragraphs. Cover: what work will be performed, how it will be performed, materials to be used, timeline expectation, what is included, and what is excluded. End with a professional closing statement referencing the total and inviting the client to ask questions. Maximum 400 words. Use confident, professional language. No filler phrases.`;
 
