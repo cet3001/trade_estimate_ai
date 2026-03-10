@@ -27,9 +27,11 @@ Deno.serve(async (req) => {
       });
     }
 
-    const { transaction_id, product_id, user_id } = body;
+    // user_id is intentionally NOT read from the body — it is derived from
+    // the JWT below to prevent privilege-escalation by a tampered client.
+    const { transaction_id, product_id } = body;
 
-    if (!transaction_id || !product_id || !user_id) {
+    if (!transaction_id || !product_id) {
       return new Response(JSON.stringify({ error: 'Missing required fields' }), {
         status: 400,
         headers: { 'Content-Type': 'application/json' },
@@ -42,14 +44,14 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     );
 
-    // 4. Verify user identity from JWT and confirm the JWT matches user_id
+    // 4. Verify user identity from JWT — use JWT-derived user.id everywhere
     const supabaseUser = createClient(
       Deno.env.get('SUPABASE_URL')!,
       Deno.env.get('SUPABASE_ANON_KEY')!,
       { global: { headers: { Authorization: authHeader } } }
     );
-    const { data: { user }, error: userError } = await supabaseUser.auth.getUser();
-    if (userError || !user || user.id !== user_id) {
+    const { data: { user }, error: authError } = await supabaseUser.auth.getUser();
+    if (authError || !user) {
       return new Response(JSON.stringify({ error: 'Unauthorized' }), {
         status: 401,
         headers: { 'Content-Type': 'application/json' },
@@ -84,7 +86,7 @@ Deno.serve(async (req) => {
     // 7. Store receipt record (transaction_id column has a UNIQUE constraint).
     //    Check for insert errors — if this fails, do not grant entitlements.
     const { error: insertError } = await supabaseAdmin.from('iap_receipts').insert({
-      user_id,
+      user_id: user.id,
       product_id,
       transaction_id,
       purchase_date: new Date().toISOString(),
@@ -102,7 +104,7 @@ Deno.serve(async (req) => {
       const { error: grantError } = await supabaseAdmin
         .from('profiles')
         .update({ subscription_status: 'active' })
-        .eq('id', user_id);
+        .eq('id', user.id);
       if (grantError) {
         return new Response(JSON.stringify({ error: 'Failed to grant subscription' }), {
           status: 500,
@@ -110,7 +112,7 @@ Deno.serve(async (req) => {
         });
       }
     } else if (product_id === PRODUCT_CREDITS_5) {
-      const { error: grantError } = await supabaseAdmin.rpc('add_credits', { p_user_id: user_id, p_amount: 5 });
+      const { error: grantError } = await supabaseAdmin.rpc('add_credits', { p_user_id: user.id, p_amount: 5 });
       if (grantError) {
         return new Response(JSON.stringify({ error: 'Failed to grant credits' }), {
           status: 500,
@@ -118,7 +120,7 @@ Deno.serve(async (req) => {
         });
       }
     } else if (product_id === PRODUCT_CREDITS_15) {
-      const { error: grantError } = await supabaseAdmin.rpc('add_credits', { p_user_id: user_id, p_amount: 15 });
+      const { error: grantError } = await supabaseAdmin.rpc('add_credits', { p_user_id: user.id, p_amount: 15 });
       if (grantError) {
         return new Response(JSON.stringify({ error: 'Failed to grant credits' }), {
           status: 500,

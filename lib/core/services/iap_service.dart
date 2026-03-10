@@ -90,6 +90,11 @@ class IapService extends ChangeNotifier {
   }
 
   Future<bool> buyCredits(int count) async {
+    if (count != 5 && count != 15) {
+      _lastError = 'Invalid credit pack: $count. Must be 5 or 15.';
+      notifyListeners();
+      return false;
+    }
     final productId = count == 5 ? kCredits5 : kCredits15;
     final product = getProduct(productId);
     if (product == null) {
@@ -127,41 +132,50 @@ class IapService extends ChangeNotifier {
     _purchasePending = true;
     notifyListeners();
     await _iap.restorePurchases();
+    // Give the stream up to 5 seconds to deliver restored transactions.
+    // If none arrive, clear the pending state to unblock the UI.
+    Future.delayed(const Duration(seconds: 5), () {
+      if (_purchasePending) {
+        _purchasePending = false;
+        notifyListeners();
+      }
+    });
   }
 
-  Future<void> _handlePurchaseUpdate(List<PurchaseDetails> purchases) async {
+  void _handlePurchaseUpdate(List<PurchaseDetails> purchases) async {
     for (final PurchaseDetails purchase in purchases) {
-      if (purchase.status == PurchaseStatus.pending) {
-        // Nothing to do — UI already shows pending state
-        continue;
-      }
+      bool shouldComplete = true; // default: complete non-purchased/restored items
 
-      if (purchase.status == PurchaseStatus.error) {
+      if (purchase.status == PurchaseStatus.pending) {
+        continue;
+      } else if (purchase.status == PurchaseStatus.error) {
         _lastError = purchase.error?.message ?? 'Purchase failed';
         _purchasePending = false;
         notifyListeners();
+        // completePurchase still called (shouldComplete = true) to clear error from queue
       } else if (purchase.status == PurchaseStatus.purchased ||
           purchase.status == PurchaseStatus.restored) {
-        await _verifyAndGrant(purchase);
+        final verified = await _verifyAndGrant(purchase);
+        shouldComplete = verified; // only complete if entitlement was granted
       } else if (purchase.status == PurchaseStatus.canceled) {
         _purchasePending = false;
         notifyListeners();
+        // completePurchase still called (shouldComplete = true) to clear from queue
       }
 
-      // Always complete the purchase to remove it from the queue
-      if (purchase.pendingCompletePurchase) {
+      if (shouldComplete && purchase.pendingCompletePurchase) {
         await _iap.completePurchase(purchase);
       }
     }
   }
 
-  Future<void> _verifyAndGrant(PurchaseDetails purchase) async {
+  Future<bool> _verifyAndGrant(PurchaseDetails purchase) async {
     final user = Supabase.instance.client.auth.currentUser;
     if (user == null) {
-      debugPrint('[IAP] No authenticated user — cannot grant purchase');
+      debugPrint('[IAP] No authenticated user — leaving transaction pending for retry');
       _purchasePending = false;
       notifyListeners();
-      return;
+      return false; // DO NOT complete purchase
     }
 
     try {
@@ -170,22 +184,26 @@ class IapService extends ChangeNotifier {
         body: {
           'transaction_id': purchase.purchaseID,
           'product_id': purchase.productID,
-          'user_id': user.id,
+          // NOTE: user_id removed — derived from JWT on server
         },
       );
 
       if (response.status != 200) {
         _lastError = 'Server verification failed (${response.status})';
         debugPrint('[IAP] Verification failed: ${response.data}');
-      } else {
-        debugPrint('[IAP] Purchase verified: ${purchase.productID}');
+        _purchasePending = false;
+        notifyListeners();
+        return false; // DO NOT complete purchase
       }
+
+      debugPrint('[IAP] Purchase verified: ${purchase.productID}');
+      return true; // OK to complete
     } catch (e) {
       _lastError = 'Verification error: $e';
       debugPrint('[IAP] Verification error: $e');
-    } finally {
       _purchasePending = false;
       notifyListeners();
+      return false; // DO NOT complete purchase
     }
   }
 
