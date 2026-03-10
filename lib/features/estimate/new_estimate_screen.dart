@@ -135,7 +135,7 @@ class _NewEstimateScreenState extends State<NewEstimateScreen> {
   // ---------------------------------------------------------------------------
 
   void _goBack() {
-    if (_step == 0) {
+    if (_step == 0 || (_step == 1 && widget.prefillEstimate != null)) {
       Navigator.of(context).pop();
       return;
     }
@@ -785,9 +785,11 @@ class _NewEstimateScreenState extends State<NewEstimateScreen> {
           const SizedBox(height: AppSpacing.md),
           FormBuilderTextField(
             name: 'labor_rate',
-            initialValue: defaultRate != null
-                ? defaultRate.toString()
-                : (_laborRate > 0 ? _laborRate.toString() : null),
+            initialValue: (widget.prefillEstimate != null && _laborRate > 0)
+                ? _laborRate.toString()
+                : (defaultRate != null
+                    ? defaultRate.toString()
+                    : (_laborRate > 0 ? _laborRate.toString() : null)),
             decoration: _fieldDecoration('Labor Rate (per hour)', hint: 'e.g. 85'),
             keyboardType: const TextInputType.numberWithOptions(decimal: true),
             onChanged: (val) => setState(() {

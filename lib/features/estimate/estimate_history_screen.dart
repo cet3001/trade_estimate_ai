@@ -27,6 +27,9 @@ class _EstimateHistoryScreenState extends State<EstimateHistoryScreen> {
   bool _isLoading = true;
   String? _loadError;
 
+  // -- Busy guard (prevents concurrent delete/duplicate)
+  bool _isBusy = false;
+
   // -- Trade filter: null = All
   TradeType? _tradeFilter;
 
@@ -96,6 +99,9 @@ class _EstimateHistoryScreenState extends State<EstimateHistoryScreen> {
   // ---------------------------------------------------------------------------
 
   Future<void> _deleteEstimate(Estimate estimate) async {
+    if (_isBusy) return;
+    setState(() => _isBusy = true);
+
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -127,29 +133,39 @@ class _EstimateHistoryScreenState extends State<EstimateHistoryScreen> {
       ),
     );
 
-    if (confirmed != true) return;
+    if (confirmed != true) {
+      if (mounted) setState(() => _isBusy = false);
+      return;
+    }
 
     try {
       await _service.deleteEstimate(estimate.id);
       if (!mounted) return;
       setState(() {
         _allEstimates.removeWhere((e) => e.id == estimate.id);
+        _isBusy = false;
       });
       _showSnackBar('Estimate deleted.', isSuccess: true);
     } catch (e) {
       if (!mounted) return;
+      setState(() => _isBusy = false);
       _showSnackBar('Failed to delete. Please try again.', isSuccess: false);
     }
   }
 
   Future<void> _duplicateEstimate(Estimate estimate) async {
+    if (_isBusy) return;
+    setState(() => _isBusy = true);
+
     try {
       final duplicated = await _service.duplicateEstimate(estimate);
       if (!mounted) return;
       if (duplicated == null) {
+        setState(() => _isBusy = false);
         _showSnackBar('Failed to duplicate. Please try again.', isSuccess: false);
         return;
       }
+      setState(() => _isBusy = false);
       // Navigate to NewEstimateScreen with the duplicated estimate pre-filled
       // so the user can review and edit before regenerating.
       Navigator.of(context).pushNamed(
@@ -158,6 +174,7 @@ class _EstimateHistoryScreenState extends State<EstimateHistoryScreen> {
       );
     } catch (e) {
       if (!mounted) return;
+      setState(() => _isBusy = false);
       _showSnackBar('Failed to duplicate. Please try again.', isSuccess: false);
     }
   }
@@ -422,6 +439,7 @@ class _EstimateHistoryScreenState extends State<EstimateHistoryScreen> {
             child: _SlidableEstimateRow(
               key: ValueKey(estimate.id),
               estimate: estimate,
+              isBusy: _isBusy,
               onTap: () => _openEstimate(estimate),
               onDuplicate: () => _duplicateEstimate(estimate),
               onDelete: () => _deleteEstimate(estimate),
@@ -541,6 +559,7 @@ class _FilterPill extends StatelessWidget {
 
 class _SlidableEstimateRow extends StatefulWidget {
   final Estimate estimate;
+  final bool isBusy;
   final VoidCallback onTap;
   final VoidCallback onDuplicate;
   final VoidCallback onDelete;
@@ -548,6 +567,7 @@ class _SlidableEstimateRow extends StatefulWidget {
   const _SlidableEstimateRow({
     super.key,
     required this.estimate,
+    required this.isBusy,
     required this.onTap,
     required this.onDuplicate,
     required this.onDelete,
@@ -641,20 +661,24 @@ class _SlidableEstimateRowState extends State<_SlidableEstimateRow>
                     color: AppColors.accent,
                     icon: Icons.copy_outlined,
                     width: _actionButtonWidth,
-                    onTap: () {
-                      _snapClose();
-                      widget.onDuplicate();
-                    },
+                    onTap: widget.isBusy
+                        ? null
+                        : () {
+                            _snapClose();
+                            widget.onDuplicate();
+                          },
                   ),
                   _ActionButton(
                     label: 'Delete',
                     color: AppColors.negative,
                     icon: Icons.delete_outline,
                     width: _actionButtonWidth,
-                    onTap: () {
-                      _snapClose();
-                      widget.onDelete();
-                    },
+                    onTap: widget.isBusy
+                        ? null
+                        : () {
+                            _snapClose();
+                            widget.onDelete();
+                          },
                   ),
                 ],
               ),
@@ -691,7 +715,7 @@ class _ActionButton extends StatelessWidget {
   final Color color;
   final IconData icon;
   final double width;
-  final VoidCallback onTap;
+  final VoidCallback? onTap;
 
   const _ActionButton({
     required this.label,
