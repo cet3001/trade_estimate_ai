@@ -107,10 +107,10 @@ class _PaywallScreenState extends State<PaywallScreen> {
   // ---------------------------------------------------------------------------
 
   Future<void> _buySubscription() async {
-    _hasPurchaseInProgress = true;
-    _activePurchaseId = 'subscription';
     setState(() => _errorSource = null);
     _iap.clearError();
+    _hasPurchaseInProgress = true;
+    _activePurchaseId = 'subscription';
     final ok = await _iap.buySubscription();
     if (!ok && mounted) {
       setState(() => _errorSource = 'subscription');
@@ -118,10 +118,10 @@ class _PaywallScreenState extends State<PaywallScreen> {
   }
 
   Future<void> _buyCredits5() async {
-    _hasPurchaseInProgress = true;
-    _activePurchaseId = 'credits5';
     setState(() => _errorSource = null);
     _iap.clearError();
+    _hasPurchaseInProgress = true;
+    _activePurchaseId = 'credits5';
     final ok = await _iap.buyCredits(5);
     if (!ok && mounted) {
       setState(() => _errorSource = 'credits5');
@@ -129,10 +129,10 @@ class _PaywallScreenState extends State<PaywallScreen> {
   }
 
   Future<void> _buyCredits15() async {
-    _hasPurchaseInProgress = true;
-    _activePurchaseId = 'credits15';
     setState(() => _errorSource = null);
     _iap.clearError();
+    _hasPurchaseInProgress = true;
+    _activePurchaseId = 'credits15';
     final ok = await _iap.buyCredits(15);
     if (!ok && mounted) {
       setState(() => _errorSource = 'credits15');
@@ -140,13 +140,13 @@ class _PaywallScreenState extends State<PaywallScreen> {
   }
 
   Future<void> _restorePurchases() async {
-    _hasPurchaseInProgress = true;
-    _activePurchaseId = 'restore';
     setState(() {
       _errorSource = null;
       _restoring = true;
     });
     _iap.clearError();
+    _hasPurchaseInProgress = true;
+    _activePurchaseId = 'restore';
 
     await _iap.restorePurchases();
 
