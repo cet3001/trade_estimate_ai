@@ -174,7 +174,7 @@ Trade: ${(trade as string).charAt(0).toUpperCase() + (trade as string).slice(1)}
 Job Description: ${sJobDescription}
 
 Scope Details:
-${Object.entries((scopeDetails as Record<string, unknown>) ?? {}).map(([k, v]) => `- ${k}: ${sanitizePromptField(v, 500)}`).join('\n')}
+${Object.entries((scopeDetails as Record<string, unknown>) ?? {}).map(([k, v]) => `- ${sanitizePromptField(k, 100)}: ${sanitizePromptField(v, 500)}`).join('\n')}
 
 Cost Breakdown:
 - Labor: ${laborHours} hours at $${laborRate}/hour = $${laborTotal.toFixed(2)}
