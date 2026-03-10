@@ -19,6 +19,13 @@ class Entitlements {
     );
   }
 
+  factory Entitlements.fromProfile(Map<String, dynamic> profile) {
+    return Entitlements(
+      hasActiveSubscription: profile['subscription_status'] == 'active',
+      creditsRemaining: profile['credits_remaining'] ?? 0,
+    );
+  }
+
   static const Entitlements empty = Entitlements(
     hasActiveSubscription: false,
     creditsRemaining: 0,
