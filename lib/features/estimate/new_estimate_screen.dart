@@ -181,7 +181,7 @@ class _NewEstimateScreenState extends State<NewEstimateScreen> {
     if (_saveLaborRate && _laborRate > 0) {
       await _service.updateProfile({'default_labor_rate': _laborRate});
     }
-
+    if (!mounted) return;
     _advanceTo(3);
   }
 
@@ -273,7 +273,8 @@ class _NewEstimateScreenState extends State<NewEstimateScreen> {
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(AppSpacing.md),
-        borderSide: const BorderSide(color: AppColors.borderActive, width: 2),
+        borderSide: const BorderSide(
+            color: AppColors.borderActive, width: AppSpacing.focusedBorderWidth),
       ),
       errorBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(AppSpacing.md),
@@ -281,7 +282,8 @@ class _NewEstimateScreenState extends State<NewEstimateScreen> {
       ),
       focusedErrorBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(AppSpacing.md),
-        borderSide: const BorderSide(color: AppColors.negative, width: 2),
+        borderSide: const BorderSide(
+            color: AppColors.negative, width: AppSpacing.focusedBorderWidth),
       ),
     );
   }
@@ -1215,7 +1217,7 @@ class _TradeTileState extends State<_TradeTile>
                       : AppColors.borderDefault,
                   width: widget.isSelected
                       ? AppSpacing.cardAccentBorderWidth
-                      : 1.0,
+                      : AppSpacing.tileBorderWidth,
                 ),
               ),
               child: Stack(

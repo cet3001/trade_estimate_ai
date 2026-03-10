@@ -26,4 +26,6 @@ class AppSpacing {
   static const double stepIndicatorDotActivSize = 10.0;
   static const double costSummaryDividerThickness = 1.0;
   static const double tradeIconBadgeSize = 40.0;
+  static const double tileBorderWidth = 1.0;       // unselected tile border
+  static const double focusedBorderWidth = 2.0;    // focused/error field border
 }

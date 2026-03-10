@@ -67,6 +67,9 @@ class TradeInfo {
   final String emoji;
   final Color color;
 
+  /// String key for the trade (e.g. 'plumbing'), matching [TradeType.value].
+  String get key => type.value;
+
   const TradeInfo({
     required this.type,
     required this.label,
