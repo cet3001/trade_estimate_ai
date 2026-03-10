@@ -38,6 +38,12 @@ class _PaywallScreenState extends State<PaywallScreen> {
   // Prevent re-entrant dismiss when the listener fires multiple times.
   bool _dismissing = false;
 
+  // Guard so the dismiss check only fires after a buy/restore is initiated.
+  bool _hasPurchaseInProgress = false;
+
+  // Tracks which buy/restore method is active (for stream-delivered errors).
+  String? _activePurchaseId;
+
   @override
   void initState() {
     super.initState();
@@ -58,8 +64,16 @@ class _PaywallScreenState extends State<PaywallScreen> {
 
   void _onIapChanged() {
     // Only act when a pending operation has just completed with no error.
-    if (!_iap.purchasePending && _iap.lastError == null && !_dismissing) {
+    if (_hasPurchaseInProgress && !_iap.purchasePending && _iap.lastError == null && !_dismissing) {
       _checkAndDismissIfSuccessful();
+    }
+    // Surface stream-delivered errors (e.g. server verification failure).
+    if (_hasPurchaseInProgress && !_iap.purchasePending && _iap.lastError != null && _activePurchaseId != null) {
+      setState(() {
+        _errorSource = _activePurchaseId;
+        _activePurchaseId = null;
+        _hasPurchaseInProgress = false;
+      });
     }
     if (mounted) setState(() {});
   }
@@ -93,6 +107,8 @@ class _PaywallScreenState extends State<PaywallScreen> {
   // ---------------------------------------------------------------------------
 
   Future<void> _buySubscription() async {
+    _hasPurchaseInProgress = true;
+    _activePurchaseId = 'subscription';
     setState(() => _errorSource = null);
     _iap.clearError();
     final ok = await _iap.buySubscription();
@@ -102,6 +118,8 @@ class _PaywallScreenState extends State<PaywallScreen> {
   }
 
   Future<void> _buyCredits5() async {
+    _hasPurchaseInProgress = true;
+    _activePurchaseId = 'credits5';
     setState(() => _errorSource = null);
     _iap.clearError();
     final ok = await _iap.buyCredits(5);
@@ -111,6 +129,8 @@ class _PaywallScreenState extends State<PaywallScreen> {
   }
 
   Future<void> _buyCredits15() async {
+    _hasPurchaseInProgress = true;
+    _activePurchaseId = 'credits15';
     setState(() => _errorSource = null);
     _iap.clearError();
     final ok = await _iap.buyCredits(15);
@@ -120,6 +140,8 @@ class _PaywallScreenState extends State<PaywallScreen> {
   }
 
   Future<void> _restorePurchases() async {
+    _hasPurchaseInProgress = true;
+    _activePurchaseId = 'restore';
     setState(() {
       _errorSource = null;
       _restoring = true;
@@ -147,12 +169,7 @@ class _PaywallScreenState extends State<PaywallScreen> {
       }
     }
 
-    if (_iap.lastError != null) {
-      setState(() => _errorSource = 'restore');
-    } else {
-      // No error but no entitlement either — tell user nothing was found.
-      setState(() => _errorSource = 'restore');
-    }
+    setState(() => _errorSource = 'restore');
   }
 
   // ---------------------------------------------------------------------------
@@ -310,7 +327,7 @@ class _PaywallScreenState extends State<PaywallScreen> {
             width: double.infinity,
             height: AppSpacing.buttonHeight,
             child: ElevatedButton(
-              onPressed: _iap.purchasePending ? null : _buySubscription,
+              onPressed: (_iap.purchasePending || _restoring) ? null : _buySubscription,
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.positive,
                 foregroundColor: AppColors.textPrimary,
@@ -374,7 +391,7 @@ class _PaywallScreenState extends State<PaywallScreen> {
             width: double.infinity,
             height: AppSpacing.buttonHeight,
             child: ElevatedButton(
-              onPressed: _iap.purchasePending ? null : _buyCredits5,
+              onPressed: (_iap.purchasePending || _restoring) ? null : _buyCredits5,
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.surfaceOverlay,
                 foregroundColor: AppColors.textPrimary,
@@ -432,7 +449,7 @@ class _PaywallScreenState extends State<PaywallScreen> {
             width: double.infinity,
             height: AppSpacing.buttonHeight,
             child: ElevatedButton(
-              onPressed: _iap.purchasePending ? null : _buyCredits15,
+              onPressed: (_iap.purchasePending || _restoring) ? null : _buyCredits15,
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.surfaceOverlay,
                 foregroundColor: AppColors.textPrimary,

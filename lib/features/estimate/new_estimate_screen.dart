@@ -195,8 +195,8 @@ class _NewEstimateScreenState extends State<NewEstimateScreen> {
           builder: (_) => PaywallScreen(onSuccess: _loadProfile),
         ),
       );
-      // Re-check entitlements after the paywall closes; if the user purchased,
-      // _loadProfile has already refreshed _entitlements so we can proceed.
+      if (!mounted) return;
+      await _loadProfile();   // re-fetch fresh entitlements after paywall closes
       if (!mounted) return;
       if (!_entitlements.canGenerateEstimate) return;
     }
