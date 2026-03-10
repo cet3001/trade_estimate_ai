@@ -10,6 +10,7 @@ class IapService extends ChangeNotifier {
 
   final InAppPurchase _iap = InAppPurchase.instance;
   StreamSubscription<List<PurchaseDetails>>? _subscription;
+  Timer? _restoreFallbackTimer;
 
   static const String kSubscriptionMonthly =
       'com.blackstonerow.tradeestimateai.subscription.monthly';
@@ -134,7 +135,8 @@ class IapService extends ChangeNotifier {
     await _iap.restorePurchases();
     // Give the stream up to 5 seconds to deliver restored transactions.
     // If none arrive, clear the pending state to unblock the UI.
-    Future.delayed(const Duration(seconds: 5), () {
+    _restoreFallbackTimer?.cancel();
+    _restoreFallbackTimer = Timer(const Duration(seconds: 5), () {
       if (_purchasePending) {
         _purchasePending = false;
         notifyListeners();
@@ -165,6 +167,8 @@ class IapService extends ChangeNotifier {
 
       if (shouldComplete && purchase.pendingCompletePurchase) {
         await _iap.completePurchase(purchase);
+        _purchasePending = false;
+        notifyListeners();
       }
     }
   }
@@ -214,6 +218,7 @@ class IapService extends ChangeNotifier {
 
   @override
   void dispose() {
+    _restoreFallbackTimer?.cancel();
     _subscription?.cancel();
     super.dispose();
   }
