@@ -15,4 +15,15 @@ class AppSpacing {
   static const double estimateCardCompactWidth = 160.0;
   static const double cardAccentBorderWidth = 3.0;
   static const double cardBorderRadius = 6.0;
+
+  // New Estimate screen
+  static const double tradeTileSize = 148.0;
+  static const double tradeTileBorderRadius = 16.0;
+  static const double tradeTileCheckSize = 22.0;
+  static const double tradeTileCheckIconSize = 14.0;
+  static const double tradeTileEmojiSize = 36.0;
+  static const double stepIndicatorDotSize = 8.0;
+  static const double stepIndicatorDotActivSize = 10.0;
+  static const double costSummaryDividerThickness = 1.0;
+  static const double tradeIconBadgeSize = 40.0;
 }

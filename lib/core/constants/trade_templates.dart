@@ -1,3 +1,6 @@
+import 'package:flutter/material.dart';
+import 'app_colors.dart';
+
 enum TradeType {
   plumbing,
   electrical,
@@ -32,6 +35,19 @@ extension TradeTypeExtension on TradeType {
     }
   }
 
+  Color get color {
+    switch (this) {
+      case TradeType.plumbing:
+        return AppColors.plumbing;
+      case TradeType.electrical:
+        return AppColors.electrical;
+      case TradeType.roofing:
+        return AppColors.roofing;
+      case TradeType.construction:
+        return AppColors.construction;
+    }
+  }
+
   String get value {
     return name;
   }
@@ -42,6 +58,21 @@ extension TradeTypeExtension on TradeType {
       orElse: () => TradeType.plumbing,
     );
   }
+}
+
+/// Display metadata for a single trade.
+class TradeInfo {
+  final TradeType type;
+  final String label;
+  final String emoji;
+  final Color color;
+
+  const TradeInfo({
+    required this.type,
+    required this.label,
+    required this.emoji,
+    required this.color,
+  });
 }
 
 class TradeTemplates {
@@ -90,4 +121,35 @@ class TradeTemplates {
       'Other'
     ],
   };
+
+  /// Ordered list of all trade display metadata.
+  static const List<TradeInfo> all = [
+    TradeInfo(
+      type: TradeType.plumbing,
+      label: 'Plumbing',
+      emoji: '🔧',
+      color: AppColors.plumbing,
+    ),
+    TradeInfo(
+      type: TradeType.electrical,
+      label: 'Electrical',
+      emoji: '⚡',
+      color: AppColors.electrical,
+    ),
+    TradeInfo(
+      type: TradeType.roofing,
+      label: 'Roofing',
+      emoji: '🏠',
+      color: AppColors.roofing,
+    ),
+    TradeInfo(
+      type: TradeType.construction,
+      label: 'Construction',
+      emoji: '🏗',
+      color: AppColors.construction,
+    ),
+  ];
+
+  static TradeInfo byType(TradeType type) =>
+      all.firstWhere((t) => t.type == type);
 }
