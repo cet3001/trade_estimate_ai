@@ -12,6 +12,7 @@ import '../../core/models/user_profile.dart';
 import '../../core/services/supabase_service.dart';
 import '../../core/utils/formatters.dart';
 import '../../widgets/loading_overlay.dart';
+import '../paywall/paywall_screen.dart';
 
 // ---------------------------------------------------------------------------
 // Screen
@@ -189,8 +190,15 @@ class _NewEstimateScreenState extends State<NewEstimateScreen> {
 
   Future<void> _onGenerate() async {
     if (!_entitlements.canGenerateEstimate) {
-      Navigator.of(context).pushNamed('/paywall');
-      return;
+      await Navigator.of(context).push(
+        MaterialPageRoute<void>(
+          builder: (_) => PaywallScreen(onSuccess: _loadProfile),
+        ),
+      );
+      // Re-check entitlements after the paywall closes; if the user purchased,
+      // _loadProfile has already refreshed _entitlements so we can proceed.
+      if (!mounted) return;
+      if (!_entitlements.canGenerateEstimate) return;
     }
 
     setState(() {

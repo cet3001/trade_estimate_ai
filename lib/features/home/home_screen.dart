@@ -8,6 +8,7 @@ import '../../core/models/user_profile.dart';
 import '../../core/services/supabase_service.dart';
 import '../../widgets/credit_badge.dart';
 import '../../widgets/estimate_card.dart';
+import '../paywall/paywall_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -78,7 +79,13 @@ class _HomeScreenState extends State<HomeScreen> {
   // Navigation helpers
   // ---------------------------------------------------------------------------
 
-  void _openPaywall() => Navigator.of(context).pushNamed('/paywall');
+  void _openPaywall() {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => PaywallScreen(onSuccess: _loadData),
+      ),
+    );
+  }
 
   void _openSettings() => Navigator.of(context).pushNamed('/settings');
 
