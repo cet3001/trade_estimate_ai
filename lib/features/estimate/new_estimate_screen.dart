@@ -8,6 +8,7 @@ import '../../core/constants/app_spacing.dart';
 import '../../core/constants/app_text_styles.dart';
 import '../../core/constants/trade_templates.dart';
 import '../../core/models/entitlements.dart';
+import '../../core/models/estimate.dart';
 import '../../core/models/user_profile.dart';
 import '../../core/services/supabase_service.dart';
 import '../../core/utils/formatters.dart';
@@ -19,7 +20,11 @@ import '../paywall/paywall_screen.dart';
 // ---------------------------------------------------------------------------
 
 class NewEstimateScreen extends StatefulWidget {
-  const NewEstimateScreen({super.key});
+  const NewEstimateScreen({super.key, this.prefillEstimate});
+
+  /// When provided, the form fields are pre-filled from this estimate so the
+  /// user can review and edit the data before regenerating.
+  final Estimate? prefillEstimate;
 
   @override
   State<NewEstimateScreen> createState() => _NewEstimateScreenState();
@@ -28,7 +33,7 @@ class NewEstimateScreen extends StatefulWidget {
 class _NewEstimateScreenState extends State<NewEstimateScreen> {
   // -- Step state
   int _step = 0; // 0..3
-  final _pageController = PageController();
+  late final PageController _pageController;
 
   // -- Trade selection
   TradeType? _selectedTrade;
@@ -75,7 +80,32 @@ class _NewEstimateScreenState extends State<NewEstimateScreen> {
   @override
   void initState() {
     super.initState();
+    _applyPrefill();
+    _pageController = PageController(initialPage: _step);
     _loadProfile();
+  }
+
+  void _applyPrefill() {
+    final prefill = widget.prefillEstimate;
+    if (prefill == null) return;
+    _selectedTrade = prefill.trade;
+    _clientName = prefill.clientName ?? '';
+    _clientEmail = prefill.clientEmail ?? '';
+    _jobTitle = prefill.jobTitle ?? '';
+    _jobLocation = prefill.jobLocation ?? '';
+    _jobDescription = prefill.jobDescription ?? '';
+    _scopeDetails = prefill.scopeDetails ?? {};
+    _laborHours = prefill.laborHours ?? 0;
+    _laborRate = prefill.laborRate ?? 0;
+    _materialsCost = prefill.materialsCost ?? 0;
+    _additionalFees = prefill.additionalFees ?? 0;
+    _notes = prefill.notes ?? '';
+    _liveLaborHours = prefill.laborHours ?? 0;
+    _liveLaborRate = prefill.laborRate ?? 0;
+    _liveMaterialsCost = prefill.materialsCost ?? 0;
+    _liveAdditionalFees = prefill.additionalFees ?? 0;
+    // Skip to step 1 (job details) so the user can review and edit.
+    _step = 1;
   }
 
   @override
@@ -92,8 +122,8 @@ class _NewEstimateScreenState extends State<NewEstimateScreen> {
       _entitlements = profile != null
           ? Entitlements.fromUserProfile(profile)
           : Entitlements.empty;
-      // Pre-seed live rate with saved default
-      if (profile?.defaultLaborRate != null) {
+      // Pre-seed live rate with saved default only when no prefill was provided
+      if (widget.prefillEstimate == null && profile?.defaultLaborRate != null) {
         _liveLaborRate = profile!.defaultLaborRate!;
         _laborRate = profile.defaultLaborRate!;
       }

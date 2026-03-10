@@ -29,6 +29,9 @@ class AppColors {
   static const borderDefault = Color(0xFF48484A);
   static const borderActive = Color(0xFF34C759);
 
+  // Transparent
+  static const transparent = Color(0x00000000);
+
   // Auth screen
   static const loadingOverlay = Color(0x8A000000);
   static const appleSignInBackground = Color(0xFFFFFFFF);

@@ -78,8 +78,11 @@ class TradeEstimateApp extends StatelessWidget {
         }
         // Phase 4+ spec routes
         if (settings.name == '/estimate/new') {
+          final prefill = settings.arguments is Estimate
+              ? settings.arguments as Estimate
+              : null;
           return MaterialPageRoute(
-            builder: (context) => const NewEstimateScreen(),
+            builder: (context) => NewEstimateScreen(prefillEstimate: prefill),
           );
         }
         if (settings.name == '/estimate/preview') {

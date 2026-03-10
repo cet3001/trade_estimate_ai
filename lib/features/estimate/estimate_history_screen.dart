@@ -150,13 +150,10 @@ class _EstimateHistoryScreenState extends State<EstimateHistoryScreen> {
         _showSnackBar('Failed to duplicate. Please try again.', isSuccess: false);
         return;
       }
-      // Add to local list (at top — most recent)
-      setState(() {
-        _allEstimates.insert(0, duplicated);
-      });
-      // Navigate to preview of the duplicate
+      // Navigate to NewEstimateScreen with the duplicated estimate pre-filled
+      // so the user can review and edit before regenerating.
       Navigator.of(context).pushNamed(
-        '/estimate/preview',
+        '/estimate/new',
         arguments: duplicated,
       );
     } catch (e) {
@@ -211,7 +208,7 @@ class _EstimateHistoryScreenState extends State<EstimateHistoryScreen> {
         backgroundColor: AppColors.background,
         elevation: 0,
         leading: Material(
-          color: Colors.transparent,
+          color: AppColors.transparent,
           child: InkWell(
             borderRadius: BorderRadius.circular(AppSpacing.xxl),
             onTap: () => Navigator.of(context).pop(),
