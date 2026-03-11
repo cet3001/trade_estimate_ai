@@ -70,7 +70,7 @@
 	<array>
 		<dict>
 			<key>CFBundleURLName</key>
-			<string>com.blackstonerow.tradeEstimateAi.auth</string>
+			<string>com.blackstonerow.tradeestimateai.auth</string>
 			<key>CFBundleURLSchemes</key>
 			<array>
 				<string>tradeestimateai</string>
@@ -78,10 +78,10 @@
 		</dict>
 		<dict>
 			<key>CFBundleURLName</key>
-			<string>com.blackstonerow.tradeEstimateAi</string>
+			<string>com.blackstonerow.tradeestimateai</string>
 			<key>CFBundleURLSchemes</key>
 			<array>
-				<string>com.blackstonerow.tradeEstimateAi</string>
+				<string>com.blackstonerow.tradeestimateai</string>
 			</array>
 		</dict>
 	</array>
