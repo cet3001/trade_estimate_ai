@@ -2,6 +2,7 @@ class UserProfile {
   final String id;
   final String? fullName;
   final String? companyName;
+  final String? contractorName;
   final String? email;
   final String? phone;
   final String? licenseNumber;
@@ -19,6 +20,7 @@ class UserProfile {
     required this.id,
     this.fullName,
     this.companyName,
+    this.contractorName,
     this.email,
     this.phone,
     this.licenseNumber,
@@ -38,6 +40,7 @@ class UserProfile {
       id: json['id'] as String,
       fullName: json['full_name'] as String?,
       companyName: json['company_name'] as String?,
+      contractorName: json['contractor_name'] as String?,
       email: json['email'] as String?,
       phone: json['phone'] as String?,
       licenseNumber: json['license_number'] as String?,
@@ -60,6 +63,7 @@ class UserProfile {
       'id': id,
       'full_name': fullName,
       'company_name': companyName,
+      'contractor_name': contractorName,
       'email': email,
       'phone': phone,
       'license_number': licenseNumber,
@@ -77,6 +81,7 @@ class UserProfile {
   UserProfile copyWith({
     String? fullName,
     String? companyName,
+    String? contractorName,
     String? email,
     String? phone,
     String? licenseNumber,
@@ -92,6 +97,7 @@ class UserProfile {
       id: id,
       fullName: fullName ?? this.fullName,
       companyName: companyName ?? this.companyName,
+      contractorName: contractorName ?? this.contractorName,
       email: email ?? this.email,
       phone: phone ?? this.phone,
       licenseNumber: licenseNumber ?? this.licenseNumber,

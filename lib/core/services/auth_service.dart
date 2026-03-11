@@ -74,12 +74,25 @@ class AuthService {
     final user = _supabase.auth.currentUser;
     if (user == null) return;
 
-    await _supabase.from('profiles').upsert({
+    final contractorName = user.userMetadata?['full_name'] as String? ??
+        user.userMetadata?['name'] as String?;
+
+    final upsertData = <String, dynamic>{
       'id': user.id,
       'email': user.email,
       'credits_remaining': 3,
       'created_at': DateTime.now().toIso8601String(),
-    }, onConflict: 'id', ignoreDuplicates: true);
+    };
+
+    if (contractorName != null && contractorName.isNotEmpty) {
+      upsertData['contractor_name'] = contractorName;
+    }
+
+    await _supabase.from('profiles').upsert(
+      upsertData,
+      onConflict: 'id',
+      ignoreDuplicates: true,
+    );
   }
 
   // ── Sign out ─────────────────────────────────────────────────────────────

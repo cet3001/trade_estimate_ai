@@ -254,6 +254,7 @@ class _NewEstimateScreenState extends State<NewEstimateScreen> {
         'notes': _notes,
         'businessName': _profile?.companyName ?? '',
         'licenseNumber': _profile?.licenseNumber ?? '',
+        'contractorName': _profile?.contractorName ?? _profile?.fullName ?? '',
       };
 
       final estimate = await _service.generateEstimate(body);

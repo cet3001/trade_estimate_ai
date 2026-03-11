@@ -164,6 +164,15 @@ class _HomeScreenState extends State<HomeScreen> {
     return '${parts[0][0]}${parts[1][0]}'.toUpperCase();
   }
 
+  String _buildGreeting() {
+    final contractorName = _profile?.contractorName;
+    if (contractorName == null || contractorName.trim().isEmpty) {
+      return 'Hi there! 👋';
+    }
+    final firstName = contractorName.trim().split(RegExp(r'\s+')).first;
+    return 'Hi, $firstName! 👋';
+  }
+
   Widget _buildBody() {
     if (_loading) return _buildLoading();
     if (_error != null) return _buildError();
@@ -243,6 +252,13 @@ class _HomeScreenState extends State<HomeScreen> {
           vertical: AppSpacing.lg,
         ),
         children: [
+          // Greeting
+          Text(
+            _buildGreeting(),
+            style: AppTextStyles.heading1,
+          ),
+          const SizedBox(height: AppSpacing.sm),
+
           // Credit badge
           CreditBadge(
             entitlements: _entitlements,

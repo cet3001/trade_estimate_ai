@@ -12,7 +12,7 @@ import '../../core/services/supabase_service.dart';
 // Internal page enum — drives which page is visible.
 // ---------------------------------------------------------------------------
 
-enum _OnboardingPage { businessInfo, ready }
+enum _OnboardingPage { welcome, businessInfo, ready }
 
 // ---------------------------------------------------------------------------
 // OnboardingScreen — single StatefulWidget managing both pages.
@@ -26,7 +26,40 @@ class OnboardingScreen extends StatefulWidget {
 }
 
 class _OnboardingScreenState extends State<OnboardingScreen> {
+  // Default to businessInfo; initState overrides to welcome if no contractor_name.
   _OnboardingPage _currentPage = _OnboardingPage.businessInfo;
+  bool _checkingProfile = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkProfileForWelcome();
+  }
+
+  Future<void> _checkProfileForWelcome() async {
+    try {
+      final profile = await SupabaseService().getProfile();
+      if (!mounted) return;
+      final hasName = profile?.contractorName != null &&
+          profile!.contractorName!.isNotEmpty;
+      setState(() {
+        _currentPage =
+            hasName ? _OnboardingPage.businessInfo : _OnboardingPage.welcome;
+        _checkingProfile = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      // On error, fall through to businessInfo
+      setState(() {
+        _currentPage = _OnboardingPage.businessInfo;
+        _checkingProfile = false;
+      });
+    }
+  }
+
+  void _showBusinessInfoPage() {
+    setState(() => _currentPage = _OnboardingPage.businessInfo);
+  }
 
   void _showReadyPage() {
     setState(() => _currentPage = _OnboardingPage.ready);
@@ -34,14 +67,141 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
   @override
   Widget build(BuildContext context) {
+    if (_checkingProfile) {
+      return const Scaffold(
+        backgroundColor: AppColors.background,
+        body: Center(
+          child: CircularProgressIndicator(
+            valueColor: AlwaysStoppedAnimation<Color>(AppColors.positive),
+          ),
+        ),
+      );
+    }
+
     return Scaffold(
       backgroundColor: AppColors.background,
       body: switch (_currentPage) {
+        _OnboardingPage.welcome => _WelcomePage(
+            onSuccess: _showBusinessInfoPage,
+          ),
         _OnboardingPage.businessInfo => _BusinessInfoPage(
             onSuccess: _showReadyPage,
           ),
         _OnboardingPage.ready => const _ReadyPage(),
       },
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Screen 1 — Welcome / Contractor Name
+// ---------------------------------------------------------------------------
+
+class _WelcomePage extends StatefulWidget {
+  const _WelcomePage({required this.onSuccess});
+
+  final VoidCallback onSuccess;
+
+  @override
+  State<_WelcomePage> createState() => _WelcomePageState();
+}
+
+class _WelcomePageState extends State<_WelcomePage> {
+  final _formKey = GlobalKey<FormBuilderState>();
+  bool _isLoading = false;
+
+  Future<void> _onContinue() async {
+    if (_isLoading) return;
+
+    final form = _formKey.currentState;
+    if (form == null || !form.saveAndValidate()) return;
+
+    final name = ((form.value['contractor_name'] as String?) ?? '').trim();
+
+    setState(() => _isLoading = true);
+
+    try {
+      await SupabaseService().updateProfile({'contractor_name': name});
+      if (!mounted) return;
+      widget.onSuccess();
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Failed to save name. Please try again.',
+            style: AppTextStyles.body.copyWith(color: AppColors.textPrimary),
+          ),
+          backgroundColor: AppColors.negative,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          margin: const EdgeInsets.all(AppSpacing.lg),
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xxxl),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const SizedBox(height: AppSpacing.xxxl),
+
+            // Title
+            Text("What's your name?", style: AppTextStyles.heading1),
+
+            const SizedBox(height: AppSpacing.sm),
+
+            // Subtitle
+            Text(
+              "We'll use this to personalize your experience.",
+              style: AppTextStyles.caption.copyWith(
+                color: AppColors.textSecondary,
+              ),
+            ),
+
+            const SizedBox(height: AppSpacing.xxxl),
+
+            // Name field
+            FormBuilder(
+              key: _formKey,
+              child: FormBuilderTextField(
+                name: 'contractor_name',
+                decoration: const InputDecoration(
+                  labelText: 'Your Name',
+                ),
+                textCapitalization: TextCapitalization.words,
+                textInputAction: TextInputAction.done,
+                onSubmitted: (_) => _onContinue(),
+                validator: FormBuilderValidators.compose([
+                  FormBuilderValidators.required(
+                    errorText: 'Please enter your name.',
+                  ),
+                ]),
+              ),
+            ),
+
+            const Spacer(),
+
+            // Continue button — full width, pinned to bottom
+            _OnboardingCtaButton(
+              label: 'Continue',
+              onPressed: _isLoading ? null : _onContinue,
+              isLoading: _isLoading,
+            ),
+
+            const SizedBox(height: AppSpacing.huge),
+          ],
+        ),
+      ),
     );
   }
 }

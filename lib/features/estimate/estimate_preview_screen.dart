@@ -432,6 +432,16 @@ class _EstimatePreviewScreenState extends State<EstimatePreviewScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(businessName, style: AppTextStyles.heading2),
+              if (profile?.contractorName != null &&
+                  profile!.contractorName!.isNotEmpty) ...[
+                const SizedBox(height: AppSpacing.xs),
+                Text(
+                  'Prepared by: ${profile.contractorName}',
+                  style: AppTextStyles.caption.copyWith(
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+              ],
               if (contactLine.isNotEmpty) ...[
                 const SizedBox(height: AppSpacing.xs),
                 Text(contactLine, style: AppTextStyles.body),
