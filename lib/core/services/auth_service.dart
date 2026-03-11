@@ -1,6 +1,8 @@
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import 'supabase_service.dart';
+
 /// Handles ONLY authentication. All other data concerns (profiles, estimates,
 /// credits, etc.) remain in [SupabaseService].
 class AuthService {
@@ -65,10 +67,16 @@ class AuthService {
   }
 
   /// Creates a new user account with email and password.
-  /// Calls [ensureProfileExists] after a successful sign-up.
+  /// Only calls [ensureProfileExists] if there is an active session after
+  /// sign-up. When email confirmation is required, [response.session] is null
+  /// and profile creation is deferred to the signedIn auth state event.
   Future<void> signUpWithEmail(String email, String password) async {
-    await _supabase.auth.signUp(email: email, password: password);
-    await ensureProfileExists();
+    final response = await _supabase.auth.signUp(email: email, password: password);
+    // Only create profile if session is active (no email confirmation required).
+    // If confirmation is required, profile creation is deferred to the signedIn event.
+    if (response.session != null) {
+      await ensureProfileExists();
+    }
   }
 
   /// Sends a password-reset email with a deep-link redirect back to the app.
@@ -101,9 +109,12 @@ class AuthService {
 
   // ── Sign out ─────────────────────────────────────────────────────────────
 
-  /// Signs out from both Google (if signed in) and Supabase.
+  /// Signs out from both Google (if signed in) and Supabase. Delegates to
+  /// [SupabaseService.signOut] so that the onboarding flag in secure storage
+  /// is also cleared — preventing the next user on the same device from
+  /// skipping onboarding.
   Future<void> signOut() async {
     await _googleSignIn.signOut();
-    await _supabase.auth.signOut();
+    await SupabaseService().signOut(); // Clears both Supabase session and onboarding flag
   }
 }

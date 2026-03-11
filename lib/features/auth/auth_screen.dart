@@ -91,10 +91,12 @@ class _AuthScreenState extends State<AuthScreen> {
     _authSubscription = _authService.authStateChanges.listen(
       (data) async {
         final event = data.event;
-        // Only handle signedIn when the user has actively initiated a sign-in.
-        // Background session restores also emit signedIn and must not trigger
-        // navigation from this screen.
-        if (event == AuthChangeEvent.signedIn && _isAnyLoading) {
+        // Handle sign-in regardless of loading state — background session
+        // restores are filtered by the _handlingSignIn re-entrancy guard
+        // inside _handleSignedIn. Removing the _isAnyLoading guard here
+        // ensures Apple OAuth redirects are handled even after _isLoadingApple
+        // is cleared in the finally block (Fix 1).
+        if (event == AuthChangeEvent.signedIn) {
           await _handleSignedIn();
         }
       },
@@ -147,6 +149,13 @@ class _AuthScreenState extends State<AuthScreen> {
       }
     } finally {
       _handlingSignIn = false;
+      if (mounted) {
+        setState(() {
+          _isLoadingApple = false;
+          _isLoadingGoogle = false;
+          _isLoadingEmail = false;
+        });
+      }
     }
   }
 
@@ -158,12 +167,13 @@ class _AuthScreenState extends State<AuthScreen> {
     setState(() => _isLoadingApple = true);
     try {
       await _authService.signInWithApple();
-      // Auth state listener handles navigation after the OAuth redirect.
+      // Auth state listener handles navigation after OAuth redirect.
     } catch (e) {
       if (mounted) {
         _setError(_friendlyError(e.toString()));
-        setState(() => _isLoadingApple = false);
       }
+    } finally {
+      if (mounted) setState(() => _isLoadingApple = false);
     }
   }
 
@@ -413,7 +423,7 @@ class _AuthScreenState extends State<AuthScreen> {
           },
         );
       },
-    );
+    ).whenComplete(resetEmailController.dispose);
   }
 
   // ── Error helpers ────────────────────────────────────────────────────────
