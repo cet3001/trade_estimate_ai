@@ -6,7 +6,12 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_spacing.dart';
 import '../../core/constants/app_text_styles.dart';
+import '../../core/services/auth_service.dart';
 import '../../core/services/supabase_service.dart';
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Auth Screen
+// ─────────────────────────────────────────────────────────────────────────────
 
 class AuthScreen extends StatefulWidget {
   const AuthScreen({super.key});
@@ -16,14 +21,43 @@ class AuthScreen extends StatefulWidget {
 }
 
 class _AuthScreenState extends State<AuthScreen> {
+  final _authService = AuthService();
   final _supabaseService = SupabaseService();
-  bool _isLoading = false;
+
+  // Per-button loading states
+  bool _isLoadingApple = false;
+  bool _isLoadingGoogle = false;
+  bool _isLoadingEmail = false;
+
+  // Re-entrancy guard for the signedIn handler
   bool _handlingSignIn = false;
+
+  // Email form visibility
+  bool _emailFormVisible = false;
+
+  // Email form mode: false = sign in, true = sign up
+  bool _isSignUpMode = false;
+
+  // Email form controllers
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
+  final _confirmPasswordController = TextEditingController();
+
+  // Password visibility toggles
+  bool _passwordObscured = true;
+  bool _confirmPasswordObscured = true;
+
+  // Inline error message
+  String? _errorMessage;
+
+  // Auth state subscription
   StreamSubscription<AuthState>? _authSubscription;
 
-  // Cached from route arguments; populated once in didChangeDependencies.
+  // Route args
   bool _welcomeBack = false;
   bool _welcomeBackInitialized = false;
+
+  bool get _isAnyLoading => _isLoadingApple || _isLoadingGoogle || _isLoadingEmail;
 
   @override
   void initState() {
@@ -45,42 +79,47 @@ class _AuthScreenState extends State<AuthScreen> {
   @override
   void dispose() {
     _authSubscription?.cancel();
+    _emailController.dispose();
+    _passwordController.dispose();
+    _confirmPasswordController.dispose();
     super.dispose();
   }
 
+  // ── Auth state listener ──────────────────────────────────────────────────
+
   void _listenToAuthChanges() {
-    _authSubscription = Supabase.instance.client.auth.onAuthStateChange.listen(
+    _authSubscription = _authService.authStateChanges.listen(
       (data) async {
         final event = data.event;
-        // Only handle signedIn when the user has actively initiated a sign-in
-        // (_isLoading is true). Background session restores also emit
-        // signedIn and must not trigger navigation from this screen.
-        if (event == AuthChangeEvent.signedIn && _isLoading) {
+        // Only handle signedIn when the user has actively initiated a sign-in.
+        // Background session restores also emit signedIn and must not trigger
+        // navigation from this screen.
+        if (event == AuthChangeEvent.signedIn && _isAnyLoading) {
           await _handleSignedIn();
         }
       },
       onError: (error) {
         if (mounted) {
-          _showError('Authentication error: $error');
-          setState(() => _isLoading = false);
+          _setError('Authentication error. Please try again.');
+          setState(() {
+            _isLoadingApple = false;
+            _isLoadingGoogle = false;
+            _isLoadingEmail = false;
+          });
         }
       },
     );
   }
 
   Future<void> _handleSignedIn() async {
-    // Re-entrancy guard: prevents a second concurrent call racing if two
-    // signedIn events arrive in quick succession.
     if (_handlingSignIn || !mounted) return;
     _handlingSignIn = true;
 
     try {
-      setState(() => _isLoading = true);
-
-      // Check if profile exists; create a minimal one if not
+      // Check if profile exists; create a minimal one if not.
       final profile = await _supabaseService.getProfile();
       if (profile == null) {
-        final user = _supabaseService.currentUser;
+        final user = _authService.currentUser;
         await _supabaseService.createProfile(
           fullName: user?.userMetadata?['full_name'] as String? ?? '',
           companyName: '',
@@ -88,7 +127,7 @@ class _AuthScreenState extends State<AuthScreen> {
         );
       }
 
-      // Check onboarding status
+      // Check onboarding status.
       final onboardingDone = await _supabaseService.hasCompletedOnboarding();
 
       if (!mounted) return;
@@ -99,63 +138,341 @@ class _AuthScreenState extends State<AuthScreen> {
       }
     } catch (e) {
       if (mounted) {
-        _showError('Failed to load profile. Please try again.');
-        setState(() => _isLoading = false);
+        _setError('Failed to load profile. Please try again.');
+        setState(() {
+          _isLoadingApple = false;
+          _isLoadingGoogle = false;
+          _isLoadingEmail = false;
+        });
       }
     } finally {
       _handlingSignIn = false;
     }
   }
 
-  Future<void> _signInWithApple() async {
-    if (_isLoading) return;
-    setState(() => _isLoading = true);
+  // ── Sign in handlers ─────────────────────────────────────────────────────
 
+  Future<void> _signInWithApple() async {
+    if (_isAnyLoading) return;
+    _clearError();
+    setState(() => _isLoadingApple = true);
     try {
-      await _supabaseService.signInWithApple();
-      // Auth state listener handles the rest after redirect
+      await _authService.signInWithApple();
+      // Auth state listener handles navigation after the OAuth redirect.
     } catch (e) {
       if (mounted) {
-        _showError('Sign in failed. Please try again.');
-        setState(() => _isLoading = false);
+        _setError(_friendlyError(e.toString()));
+        setState(() => _isLoadingApple = false);
       }
     }
   }
 
-  void _showError(String message) {
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          message,
-          style: AppTextStyles.body.copyWith(color: AppColors.textPrimary),
-        ),
-        backgroundColor: AppColors.negative,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
-        margin: const EdgeInsets.all(AppSpacing.lg),
+  Future<void> _signInWithGoogle() async {
+    if (_isAnyLoading) return;
+    _clearError();
+    setState(() => _isLoadingGoogle = true);
+    try {
+      await _authService.signInWithGoogle();
+      // signInWithGoogle calls ensureProfileExists internally.
+      // The auth state listener will fire and handle navigation.
+    } catch (e) {
+      if (mounted) {
+        final msg = e.toString();
+        if (msg.contains('cancelled') || msg.contains('canceled')) {
+          // User dismissed the picker — not an error worth displaying.
+          setState(() => _isLoadingGoogle = false);
+        } else {
+          _setError(_friendlyError(msg));
+          setState(() => _isLoadingGoogle = false);
+        }
+      }
+    }
+  }
+
+  Future<void> _submitEmailForm() async {
+    if (_isAnyLoading) return;
+    _clearError();
+
+    final email = _emailController.text.trim();
+    final password = _passwordController.text;
+
+    if (email.isEmpty || password.isEmpty) {
+      _setError('Please enter your email and password.');
+      return;
+    }
+
+    if (_isSignUpMode) {
+      if (password != _confirmPasswordController.text) {
+        _setError('Passwords do not match.');
+        return;
+      }
+      if (password.length < 8) {
+        _setError('Password must be at least 8 characters.');
+        return;
+      }
+    }
+
+    setState(() => _isLoadingEmail = true);
+    try {
+      if (_isSignUpMode) {
+        await _authService.signUpWithEmail(email, password);
+      } else {
+        await _authService.signInWithEmail(email, password);
+      }
+      // Auth state listener handles navigation.
+    } catch (e) {
+      if (mounted) {
+        _setError(_friendlyError(e.toString()));
+        setState(() => _isLoadingEmail = false);
+      }
+    }
+  }
+
+  // ── Forgot password bottom sheet ─────────────────────────────────────────
+
+  void _showForgotPasswordSheet() {
+    final resetEmailController =
+        TextEditingController(text: _emailController.text.trim());
+    bool isSending = false;
+    bool sent = false;
+    String? sheetError;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: AppColors.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (ctx, setSheetState) {
+            return Padding(
+              padding: EdgeInsets.fromLTRB(
+                AppSpacing.xxxl,
+                AppSpacing.xxl,
+                AppSpacing.xxxl,
+                AppSpacing.xxxl + MediaQuery.of(ctx).viewInsets.bottom,
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Handle
+                  Center(
+                    child: Container(
+                      width: 40,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: AppColors.borderDefault,
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.xl),
+
+                  Text('Reset Password', style: AppTextStyles.heading2),
+                  const SizedBox(height: AppSpacing.sm),
+                  Text(
+                    'Enter your email and we\'ll send you a reset link.',
+                    style: AppTextStyles.body.copyWith(
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.xxl),
+
+                  if (sent) ...[
+                    Row(
+                      children: [
+                        const Icon(
+                          Icons.check_circle_outline_rounded,
+                          color: AppColors.positive,
+                          size: 20,
+                        ),
+                        const SizedBox(width: AppSpacing.sm),
+                        Expanded(
+                          child: Text(
+                            'Reset email sent. Check your inbox.',
+                            style: AppTextStyles.body.copyWith(
+                              color: AppColors.positive,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: AppSpacing.xxl),
+                    SizedBox(
+                      width: double.infinity,
+                      height: AppSpacing.buttonHeight,
+                      child: OutlinedButton(
+                        onPressed: () => Navigator.of(ctx).pop(),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: AppColors.textPrimary,
+                          side: const BorderSide(color: AppColors.borderDefault),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        child: const Text('Done'),
+                      ),
+                    ),
+                  ] else ...[
+                    TextField(
+                      controller: resetEmailController,
+                      keyboardType: TextInputType.emailAddress,
+                      autocorrect: false,
+                      style: AppTextStyles.body,
+                      decoration: InputDecoration(
+                        labelText: 'Email',
+                        hintText: 'you@example.com',
+                        prefixIcon: const Icon(
+                          Icons.email_outlined,
+                          color: AppColors.textSecondary,
+                          size: 20,
+                        ),
+                      ),
+                    ),
+
+                    if (sheetError != null) ...[
+                      const SizedBox(height: AppSpacing.sm),
+                      Text(
+                        sheetError!,
+                        style: AppTextStyles.caption.copyWith(
+                          color: AppColors.negative,
+                        ),
+                      ),
+                    ],
+
+                    const SizedBox(height: AppSpacing.xl),
+                    SizedBox(
+                      width: double.infinity,
+                      height: AppSpacing.buttonHeight,
+                      child: ElevatedButton(
+                        onPressed: isSending
+                            ? null
+                            : () async {
+                                final email =
+                                    resetEmailController.text.trim();
+                                if (email.isEmpty) {
+                                  setSheetState(
+                                    () => sheetError = 'Please enter your email.',
+                                  );
+                                  return;
+                                }
+                                setSheetState(() {
+                                  isSending = true;
+                                  sheetError = null;
+                                });
+                                try {
+                                  await _authService
+                                      .sendPasswordResetEmail(email);
+                                  setSheetState(() {
+                                    isSending = false;
+                                    sent = true;
+                                  });
+                                } catch (e) {
+                                  setSheetState(() {
+                                    isSending = false;
+                                    sheetError =
+                                        'Could not send reset email. Try again.';
+                                  });
+                                }
+                              },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.positive,
+                          foregroundColor: AppColors.background,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          elevation: 0,
+                        ),
+                        child: isSending
+                            ? const SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  valueColor: AlwaysStoppedAnimation<Color>(
+                                    AppColors.background,
+                                  ),
+                                ),
+                              )
+                            : Text(
+                                'Send Reset Email',
+                                style: AppTextStyles.body.copyWith(
+                                  color: AppColors.background,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            );
+          },
+        );
+      },
     );
   }
+
+  // ── Error helpers ────────────────────────────────────────────────────────
+
+  void _setError(String message) {
+    if (mounted) setState(() => _errorMessage = message);
+  }
+
+  void _clearError() {
+    if (_errorMessage != null && mounted) setState(() => _errorMessage = null);
+  }
+
+  /// Maps Supabase / exception error strings to user-friendly messages.
+  String _friendlyError(String raw) {
+    final lower = raw.toLowerCase();
+    if (lower.contains('wrong-password') ||
+        lower.contains('invalid-login-credentials') ||
+        lower.contains('invalid login credentials') ||
+        lower.contains('invalid_credentials')) {
+      return 'Incorrect email or password.';
+    }
+    if (lower.contains('email-already-in-use') ||
+        lower.contains('user-already-registered') ||
+        lower.contains('user already registered')) {
+      return 'An account with this email already exists. Try signing in.';
+    }
+    if (lower.contains('weak-password') || lower.contains('weak password')) {
+      return 'Password must be at least 8 characters.';
+    }
+    if (lower.contains('network') ||
+        lower.contains('socket') ||
+        lower.contains('connection')) {
+      return 'Check your internet connection and try again.';
+    }
+    return 'Something went wrong. Please try again.';
+  }
+
+  // ── Build ────────────────────────────────────────────────────────────────
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
-      body: Stack(
-        children: [
-          SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xxxl),
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xxxl),
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              minHeight: MediaQuery.of(context).size.height -
+                  MediaQuery.of(context).padding.top -
+                  MediaQuery.of(context).padding.bottom,
+            ),
+            child: IntrinsicHeight(
               child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  const Spacer(),
+                  const SizedBox(height: AppSpacing.huge),
 
-                  // App icon / logo placeholder
+                  // ── Logo / Icon ──────────────────────────────────────────
                   Container(
                     width: 80,
                     height: 80,
@@ -167,7 +484,7 @@ class _AuthScreenState extends State<AuthScreen> {
                         width: 1,
                       ),
                     ),
-                    child: Center(
+                    child: const Center(
                       child: Icon(
                         Icons.construction_rounded,
                         size: 40,
@@ -178,20 +495,20 @@ class _AuthScreenState extends State<AuthScreen> {
 
                   const SizedBox(height: AppSpacing.xxxl),
 
-                  // App name
+                  // ── App name ─────────────────────────────────────────────
                   Text(
                     'Trade Estimate AI',
                     style: AppTextStyles.heading1,
                     textAlign: TextAlign.center,
                   ),
 
-                  const SizedBox(height: AppSpacing.xxxl),
+                  const SizedBox(height: AppSpacing.md),
 
-                  // Subtext — differs based on welcome back mode
+                  // ── Tagline ──────────────────────────────────────────────
                   Text(
                     _welcomeBack
                         ? 'Welcome back. Sign in to continue.'
-                        : 'Professional estimates for tradespeople.',
+                        : 'Instant estimates for trade professionals.',
                     style: AppTextStyles.body.copyWith(
                       color: AppColors.textSecondary,
                     ),
@@ -200,76 +517,567 @@ class _AuthScreenState extends State<AuthScreen> {
 
                   const Spacer(),
 
-                  // Sign in with Apple button
-                  _SignInWithAppleButton(
-                    onPressed: _isLoading ? null : _signInWithApple,
+                  // ── Apple Sign In ────────────────────────────────────────
+                  _AuthButton(
+                    onPressed: _isAnyLoading ? null : _signInWithApple,
+                    isLoading: _isLoadingApple,
+                    backgroundColor: AppColors.appleSignInBackground,
+                    foregroundColor: AppColors.appleSignInForeground,
+                    disabledOpacity: _isAnyLoading && !_isLoadingApple,
+                    icon: const Icon(
+                      Icons.apple,
+                      size: 22,
+                      color: AppColors.appleSignInForeground,
+                    ),
+                    label: 'Continue with Apple',
+                    labelStyle: AppTextStyles.body.copyWith(
+                      color: AppColors.appleSignInForeground,
+                      fontWeight: FontWeight.w600,
+                    ),
+                    loaderColor: AppColors.appleSignInForeground,
                   ),
 
-                  const SizedBox(height: AppSpacing.huge),
+                  const SizedBox(height: AppSpacing.md),
+
+                  // ── Google Sign In ───────────────────────────────────────
+                  _AuthButton(
+                    onPressed: _isAnyLoading ? null : _signInWithGoogle,
+                    isLoading: _isLoadingGoogle,
+                    backgroundColor: Colors.white,
+                    foregroundColor: const Color(0xFF3C4043),
+                    disabledOpacity: _isAnyLoading && !_isLoadingGoogle,
+                    icon: _GoogleLogo(),
+                    label: 'Continue with Google',
+                    labelStyle: AppTextStyles.body.copyWith(
+                      color: const Color(0xFF3C4043),
+                      fontWeight: FontWeight.w600,
+                    ),
+                    loaderColor: const Color(0xFF4285F4),
+                  ),
+
+                  const SizedBox(height: AppSpacing.md),
+
+                  // ── Email button ─────────────────────────────────────────
+                  SizedBox(
+                    width: double.infinity,
+                    height: AppSpacing.buttonHeight,
+                    child: Opacity(
+                      opacity: (_isAnyLoading && !_isLoadingEmail) ? 0.4 : 1.0,
+                      child: OutlinedButton(
+                        onPressed: (_isAnyLoading && !_isLoadingEmail)
+                            ? null
+                            : () {
+                                _clearError();
+                                setState(
+                                  () => _emailFormVisible = !_emailFormVisible,
+                                );
+                              },
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: AppColors.textPrimary,
+                          side: const BorderSide(
+                            color: AppColors.borderDefault,
+                            width: 1.5,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Icon(
+                              Icons.email_outlined,
+                              size: 20,
+                              color: AppColors.textPrimary,
+                            ),
+                            const SizedBox(width: AppSpacing.sm),
+                            Text(
+                              'Continue with Email',
+                              style: AppTextStyles.body.copyWith(
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+
+                  // ── Animated email form ──────────────────────────────────
+                  AnimatedSize(
+                    duration: const Duration(milliseconds: 250),
+                    curve: Curves.easeInOut,
+                    child: _emailFormVisible
+                        ? _EmailForm(
+                            emailController: _emailController,
+                            passwordController: _passwordController,
+                            confirmPasswordController:
+                                _confirmPasswordController,
+                            passwordObscured: _passwordObscured,
+                            confirmPasswordObscured: _confirmPasswordObscured,
+                            isSignUpMode: _isSignUpMode,
+                            isLoading: _isLoadingEmail,
+                            isDisabled: _isAnyLoading && !_isLoadingEmail,
+                            onTogglePasswordVisibility: () => setState(
+                              () => _passwordObscured = !_passwordObscured,
+                            ),
+                            onToggleConfirmPasswordVisibility: () => setState(
+                              () => _confirmPasswordObscured =
+                                  !_confirmPasswordObscured,
+                            ),
+                            onToggleMode: () {
+                              _clearError();
+                              setState(() => _isSignUpMode = !_isSignUpMode);
+                            },
+                            onSubmit: _submitEmailForm,
+                            onForgotPassword: _showForgotPasswordSheet,
+                          )
+                        : const SizedBox.shrink(),
+                  ),
+
+                  // ── Inline error message ─────────────────────────────────
+                  if (_errorMessage != null) ...[
+                    const SizedBox(height: AppSpacing.md),
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: AppSpacing.md,
+                        vertical: AppSpacing.sm,
+                      ),
+                      decoration: BoxDecoration(
+                        color: AppColors.negative.withAlpha(26),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
+                          color: AppColors.negative.withAlpha(77),
+                        ),
+                      ),
+                      child: Text(
+                        _errorMessage!,
+                        style: AppTextStyles.caption.copyWith(
+                          color: AppColors.negative,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                  ],
+
+                  const SizedBox(height: AppSpacing.xl),
+
+                  // ── Legal footer ─────────────────────────────────────────
+                  Text(
+                    'By continuing, you agree to our Terms & Privacy Policy',
+                    style: AppTextStyles.caption,
+                    textAlign: TextAlign.center,
+                  ),
+
+                  const SizedBox(height: AppSpacing.xxl),
                 ],
               ),
             ),
           ),
-
-          // Loading overlay
-          if (_isLoading)
-            Container(
-              color: AppColors.loadingOverlay,
-              child: const Center(
-                child: CircularProgressIndicator(
-                  valueColor:
-                      AlwaysStoppedAnimation<Color>(AppColors.positive),
-                ),
-              ),
-            ),
-        ],
+        ),
       ),
     );
   }
 }
 
-// TODO: Replace with sign_in_with_apple package before App Store submission.
-// Icons.apple is not the official Apple logo and may cause App Store rejection.
-// See: https://pub.dev/packages/sign_in_with_apple
-class _SignInWithAppleButton extends StatelessWidget {
-  const _SignInWithAppleButton({required this.onPressed});
+// ─────────────────────────────────────────────────────────────────────────────
+// Reusable full-width auth button (Apple / Google)
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _AuthButton extends StatelessWidget {
+  const _AuthButton({
+    required this.onPressed,
+    required this.isLoading,
+    required this.backgroundColor,
+    required this.foregroundColor,
+    required this.disabledOpacity,
+    required this.icon,
+    required this.label,
+    required this.labelStyle,
+    required this.loaderColor,
+  });
 
   final VoidCallback? onPressed;
+  final bool isLoading;
+  final Color backgroundColor;
+  final Color foregroundColor;
+  final bool disabledOpacity;
+  final Widget icon;
+  final String label;
+  final TextStyle labelStyle;
+  final Color loaderColor;
 
   @override
   Widget build(BuildContext context) {
     return SizedBox(
       width: double.infinity,
-      height: 52,
-      child: ElevatedButton(
-        onPressed: onPressed,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: AppColors.appleSignInBackground,
-          foregroundColor: AppColors.appleSignInForeground,
-          disabledBackgroundColor: AppColors.appleSignInBackground.withAlpha(137),
-          elevation: 0,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
+      height: AppSpacing.buttonHeight,
+      child: Opacity(
+        opacity: disabledOpacity ? 0.4 : 1.0,
+        child: ElevatedButton(
+          onPressed: onPressed,
+          style: ElevatedButton.styleFrom(
+            backgroundColor: backgroundColor,
+            foregroundColor: foregroundColor,
+            disabledBackgroundColor: backgroundColor.withAlpha(137),
+            elevation: 0,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+          child: isLoading
+              ? SizedBox(
+                  width: 22,
+                  height: 22,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2.5,
+                    valueColor: AlwaysStoppedAnimation<Color>(loaderColor),
+                  ),
+                )
+              : Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    icon,
+                    const SizedBox(width: AppSpacing.sm),
+                    Text(label, style: labelStyle),
+                  ],
+                ),
+        ),
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Google logo widget (coloured G)
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _GoogleLogo extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 22,
+      height: 22,
+      child: CustomPaint(painter: _GoogleLogoPainter()),
+    );
+  }
+}
+
+class _GoogleLogoPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final center = Offset(size.width / 2, size.height / 2);
+    final radius = size.width / 2;
+
+    // Background circle
+    canvas.drawCircle(center, radius, Paint()..color = Colors.white);
+
+    // Draw a simplified coloured "G" using arcs and rects
+    // Blue arc (left + top portions)
+    final arcRect = Rect.fromCircle(center: center, radius: radius * 0.72);
+    final paintBlue = Paint()
+      ..color = const Color(0xFF4285F4)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = size.width * 0.18
+      ..strokeCap = StrokeCap.butt;
+
+    canvas.drawArc(arcRect, 0.38, 4.54, false, paintBlue);
+
+    // Red arc (bottom)
+    final paintRed = Paint()
+      ..color = const Color(0xFFEA4335)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = size.width * 0.18
+      ..strokeCap = StrokeCap.round;
+    canvas.drawArc(arcRect, 4.92, 0.82, false, paintRed);
+
+    // Right horizontal bar (white background + blue fill)
+    final barRight = Rect.fromLTWH(
+      center.dx,
+      center.dy - size.height * 0.09,
+      radius * 0.85,
+      size.height * 0.18,
+    );
+    canvas.drawRect(barRight, Paint()..color = const Color(0xFF4285F4));
+
+    // Green arc (bottom right)
+    final paintGreen = Paint()
+      ..color = const Color(0xFF34A853)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = size.width * 0.18
+      ..strokeCap = StrokeCap.round;
+    canvas.drawArc(arcRect, 4.36, 0.56, false, paintGreen);
+
+    // Yellow arc (bottom left)
+    final paintYellow = Paint()
+      ..color = const Color(0xFFFBBC05)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = size.width * 0.18
+      ..strokeCap = StrokeCap.round;
+    canvas.drawArc(arcRect, 3.93, 0.43, false, paintYellow);
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Email form (animated)
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _EmailForm extends StatelessWidget {
+  const _EmailForm({
+    required this.emailController,
+    required this.passwordController,
+    required this.confirmPasswordController,
+    required this.passwordObscured,
+    required this.confirmPasswordObscured,
+    required this.isSignUpMode,
+    required this.isLoading,
+    required this.isDisabled,
+    required this.onTogglePasswordVisibility,
+    required this.onToggleConfirmPasswordVisibility,
+    required this.onToggleMode,
+    required this.onSubmit,
+    required this.onForgotPassword,
+  });
+
+  final TextEditingController emailController;
+  final TextEditingController passwordController;
+  final TextEditingController confirmPasswordController;
+  final bool passwordObscured;
+  final bool confirmPasswordObscured;
+  final bool isSignUpMode;
+  final bool isLoading;
+  final bool isDisabled;
+  final VoidCallback onTogglePasswordVisibility;
+  final VoidCallback onToggleConfirmPasswordVisibility;
+  final VoidCallback onToggleMode;
+  final VoidCallback onSubmit;
+  final VoidCallback onForgotPassword;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        const SizedBox(height: AppSpacing.xl),
+
+        // ── Sign In / Sign Up tabs ─────────────────────────────────────
+        Container(
+          height: 40,
+          decoration: BoxDecoration(
+            color: AppColors.surface,
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Row(
+            children: [
+              _ModeTab(
+                label: 'Sign In',
+                isSelected: !isSignUpMode,
+                onTap: isSignUpMode ? onToggleMode : null,
+              ),
+              _ModeTab(
+                label: 'Create Account',
+                isSelected: isSignUpMode,
+                onTap: !isSignUpMode ? onToggleMode : null,
+              ),
+            ],
           ),
         ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            // Apple logo — using a styled icon as placeholder
-            const Icon(
-              Icons.apple,
-              size: 22,
-              color: AppColors.appleSignInForeground,
+
+        const SizedBox(height: AppSpacing.xl),
+
+        // ── Email field ───────────────────────────────────────────────
+        TextField(
+          controller: emailController,
+          keyboardType: TextInputType.emailAddress,
+          autocorrect: false,
+          textInputAction: TextInputAction.next,
+          enabled: !isDisabled && !isLoading,
+          style: AppTextStyles.body,
+          decoration: InputDecoration(
+            labelText: 'Email',
+            hintText: 'you@example.com',
+            prefixIcon: const Icon(
+              Icons.email_outlined,
+              color: AppColors.textSecondary,
+              size: 20,
             ),
-            const SizedBox(width: AppSpacing.sm),
-            Text(
-              'Sign in with Apple',
-              style: AppTextStyles.body.copyWith(
-                color: AppColors.appleSignInForeground,
-                fontWeight: FontWeight.w600,
+          ),
+        ),
+
+        const SizedBox(height: AppSpacing.md),
+
+        // ── Password field ────────────────────────────────────────────
+        TextField(
+          controller: passwordController,
+          obscureText: passwordObscured,
+          textInputAction:
+              isSignUpMode ? TextInputAction.next : TextInputAction.done,
+          onSubmitted: isSignUpMode ? null : (_) => onSubmit(),
+          enabled: !isDisabled && !isLoading,
+          style: AppTextStyles.body,
+          decoration: InputDecoration(
+            labelText: 'Password',
+            hintText: isSignUpMode ? 'At least 8 characters' : '••••••••',
+            prefixIcon: const Icon(
+              Icons.lock_outline_rounded,
+              color: AppColors.textSecondary,
+              size: 20,
+            ),
+            suffixIcon: IconButton(
+              icon: Icon(
+                passwordObscured
+                    ? Icons.visibility_outlined
+                    : Icons.visibility_off_outlined,
+                color: AppColors.textSecondary,
+                size: 20,
+              ),
+              onPressed: onTogglePasswordVisibility,
+            ),
+          ),
+        ),
+
+        // ── Forgot password (sign in mode only) ───────────────────────
+        if (!isSignUpMode) ...[
+          Align(
+            alignment: Alignment.centerRight,
+            child: TextButton(
+              onPressed: isLoading ? null : onForgotPassword,
+              style: TextButton.styleFrom(
+                foregroundColor: AppColors.accent,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.xs,
+                  vertical: AppSpacing.xs,
+                ),
+                minimumSize: Size.zero,
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              ),
+              child: Text(
+                'Forgot Password?',
+                style: AppTextStyles.caption.copyWith(
+                  color: AppColors.accent,
+                ),
               ),
             ),
-          ],
+          ),
+        ],
+
+        // ── Confirm password (sign up mode only) ──────────────────────
+        if (isSignUpMode) ...[
+          const SizedBox(height: AppSpacing.md),
+          TextField(
+            controller: confirmPasswordController,
+            obscureText: confirmPasswordObscured,
+            textInputAction: TextInputAction.done,
+            onSubmitted: (_) => onSubmit(),
+            enabled: !isDisabled && !isLoading,
+            style: AppTextStyles.body,
+            decoration: InputDecoration(
+              labelText: 'Confirm Password',
+              hintText: '••••••••',
+              prefixIcon: const Icon(
+                Icons.lock_outline_rounded,
+                color: AppColors.textSecondary,
+                size: 20,
+              ),
+              suffixIcon: IconButton(
+                icon: Icon(
+                  confirmPasswordObscured
+                      ? Icons.visibility_outlined
+                      : Icons.visibility_off_outlined,
+                  color: AppColors.textSecondary,
+                  size: 20,
+                ),
+                onPressed: onToggleConfirmPasswordVisibility,
+              ),
+            ),
+          ),
+        ],
+
+        const SizedBox(height: AppSpacing.xl),
+
+        // ── Submit button ─────────────────────────────────────────────
+        SizedBox(
+          height: AppSpacing.buttonHeight,
+          child: ElevatedButton(
+            onPressed: (isLoading || isDisabled) ? null : onSubmit,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.positive,
+              foregroundColor: AppColors.background,
+              disabledBackgroundColor: AppColors.positive.withAlpha(100),
+              elevation: 0,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+            child: isLoading
+                ? const SizedBox(
+                    width: 22,
+                    height: 22,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2.5,
+                      valueColor: AlwaysStoppedAnimation<Color>(
+                        AppColors.background,
+                      ),
+                    ),
+                  )
+                : Text(
+                    isSignUpMode ? 'Create Account' : 'Sign In',
+                    style: AppTextStyles.body.copyWith(
+                      color: AppColors.background,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+          ),
+        ),
+
+        const SizedBox(height: AppSpacing.md),
+      ],
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Sign In / Sign Up mode tab
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _ModeTab extends StatelessWidget {
+  const _ModeTab({
+    required this.label,
+    required this.isSelected,
+    required this.onTap,
+  });
+
+  final String label;
+  final bool isSelected;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Expanded(
+      child: GestureDetector(
+        onTap: onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          margin: const EdgeInsets.all(3),
+          decoration: BoxDecoration(
+            color: isSelected ? AppColors.surfaceElevated : Colors.transparent,
+            borderRadius: BorderRadius.circular(8),
+          ),
+          alignment: Alignment.center,
+          child: Text(
+            label,
+            style: AppTextStyles.label.copyWith(
+              color: isSelected
+                  ? AppColors.textPrimary
+                  : AppColors.textSecondary,
+              fontWeight:
+                  isSelected ? FontWeight.w600 : FontWeight.w400,
+            ),
+          ),
         ),
       ),
     );

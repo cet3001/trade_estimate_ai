@@ -84,6 +84,15 @@
 				<string>com.blackstonerow.tradeestimateai</string>
 			</array>
 		</dict>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>com.blackstonerow.tradeestimateai.google</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<!-- Replace with your reversed Google client ID, e.g. com.googleusercontent.apps.YOUR_CLIENT_ID -->
+				<string>REPLACE_WITH_REVERSED_GOOGLE_CLIENT_ID</string>
+			</array>
+		</dict>
 	</array>
 	<key>NSCameraUsageDescription</key>
 	<string>Trade Estimate AI uses the camera to attach photos to your estimates.</string>

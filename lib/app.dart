@@ -106,6 +106,15 @@ class TradeEstimateApp extends StatelessWidget {
 // Router that checks auth state at cold launch and redirects appropriately.
 // The route determination is done before the first meaningful frame so the
 // user never sees the auth screen flash before being sent to /home.
+//
+// Deep-link handling for tradeestimateai://auth/callback and
+// tradeestimateai://auth/reset is done automatically by supabase_flutter via
+// its onAuthStateChange stream — no custom URL handler is required here.
+// The URL scheme is registered in ios/Runner/Info.plist (CFBundleURLTypes).
+//
+// Authentication is now performed through AuthService
+// (lib/core/services/auth_service.dart). SupabaseService remains the single
+// source of truth for all non-auth data operations.
 class _AppRouter extends StatefulWidget {
   const _AppRouter();
 
