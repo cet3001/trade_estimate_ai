@@ -26,7 +26,6 @@ class _AuthScreenState extends State<AuthScreen> {
 
   // Per-button loading states
   bool _isLoadingApple = false;
-  bool _isLoadingGoogle = false;
   bool _isLoadingEmail = false;
 
   // Re-entrancy guard for the signedIn handler
@@ -57,7 +56,7 @@ class _AuthScreenState extends State<AuthScreen> {
   bool _welcomeBack = false;
   bool _welcomeBackInitialized = false;
 
-  bool get _isAnyLoading => _isLoadingApple || _isLoadingGoogle || _isLoadingEmail;
+  bool get _isAnyLoading => _isLoadingApple || _isLoadingEmail;
 
   @override
   void initState() {
@@ -105,7 +104,6 @@ class _AuthScreenState extends State<AuthScreen> {
           _setError('Authentication error. Please try again.');
           setState(() {
             _isLoadingApple = false;
-            _isLoadingGoogle = false;
             _isLoadingEmail = false;
           });
         }
@@ -143,7 +141,6 @@ class _AuthScreenState extends State<AuthScreen> {
         _setError('Failed to load profile. Please try again.');
         setState(() {
           _isLoadingApple = false;
-          _isLoadingGoogle = false;
           _isLoadingEmail = false;
         });
       }
@@ -152,7 +149,6 @@ class _AuthScreenState extends State<AuthScreen> {
       if (mounted) {
         setState(() {
           _isLoadingApple = false;
-          _isLoadingGoogle = false;
           _isLoadingEmail = false;
         });
       }
@@ -174,27 +170,6 @@ class _AuthScreenState extends State<AuthScreen> {
       }
     } finally {
       if (mounted) setState(() => _isLoadingApple = false);
-    }
-  }
-
-  Future<void> _signInWithGoogle() async {
-    if (_isAnyLoading) return;
-    _clearError();
-    setState(() => _isLoadingGoogle = true);
-    try {
-      await _authService.signInWithGoogle();
-      // signInWithGoogle calls ensureProfileExists internally.
-      // The auth state listener will fire and handle navigation.
-    } catch (e) {
-      if (mounted) {
-        final msg = e.toString();
-        if (!msg.contains('cancelled') && !msg.contains('canceled')) {
-          // User dismissed the picker — not an error worth displaying.
-          _setError(_friendlyError(msg));
-        }
-      }
-    } finally {
-      if (mounted) setState(() => _isLoadingGoogle = false);
     }
   }
 
@@ -549,24 +524,6 @@ class _AuthScreenState extends State<AuthScreen> {
 
                   const SizedBox(height: AppSpacing.md),
 
-                  // ── Google Sign In ───────────────────────────────────────
-                  _AuthButton(
-                    onPressed: _isAnyLoading ? null : _signInWithGoogle,
-                    isLoading: _isLoadingGoogle,
-                    backgroundColor: Colors.white,
-                    foregroundColor: const Color(0xFF3C4043),
-                    disabledOpacity: _isAnyLoading && !_isLoadingGoogle,
-                    icon: _GoogleLogo(),
-                    label: 'Continue with Google',
-                    labelStyle: AppTextStyles.body.copyWith(
-                      color: const Color(0xFF3C4043),
-                      fontWeight: FontWeight.w600,
-                    ),
-                    loaderColor: const Color(0xFF4285F4),
-                  ),
-
-                  const SizedBox(height: AppSpacing.md),
-
                   // ── Email button ─────────────────────────────────────────
                   SizedBox(
                     width: double.infinity,
@@ -757,79 +714,6 @@ class _AuthButton extends StatelessWidget {
       ),
     );
   }
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Google logo widget (coloured G)
-// ─────────────────────────────────────────────────────────────────────────────
-
-class _GoogleLogo extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      width: 22,
-      height: 22,
-      child: CustomPaint(painter: _GoogleLogoPainter()),
-    );
-  }
-}
-
-class _GoogleLogoPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final center = Offset(size.width / 2, size.height / 2);
-    final radius = size.width / 2;
-
-    // Background circle
-    canvas.drawCircle(center, radius, Paint()..color = Colors.white);
-
-    // Draw a simplified coloured "G" using arcs and rects
-    // Blue arc (left + top portions)
-    final arcRect = Rect.fromCircle(center: center, radius: radius * 0.72);
-    final paintBlue = Paint()
-      ..color = const Color(0xFF4285F4)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = size.width * 0.18
-      ..strokeCap = StrokeCap.butt;
-
-    canvas.drawArc(arcRect, 0.38, 4.54, false, paintBlue);
-
-    // Red arc (bottom)
-    final paintRed = Paint()
-      ..color = const Color(0xFFEA4335)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = size.width * 0.18
-      ..strokeCap = StrokeCap.round;
-    canvas.drawArc(arcRect, 4.92, 0.82, false, paintRed);
-
-    // Right horizontal bar (white background + blue fill)
-    final barRight = Rect.fromLTWH(
-      center.dx,
-      center.dy - size.height * 0.09,
-      radius * 0.85,
-      size.height * 0.18,
-    );
-    canvas.drawRect(barRight, Paint()..color = const Color(0xFF4285F4));
-
-    // Green arc (bottom right)
-    final paintGreen = Paint()
-      ..color = const Color(0xFF34A853)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = size.width * 0.18
-      ..strokeCap = StrokeCap.round;
-    canvas.drawArc(arcRect, 4.36, 0.56, false, paintGreen);
-
-    // Yellow arc (bottom left)
-    final paintYellow = Paint()
-      ..color = const Color(0xFFFBBC05)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = size.width * 0.18
-      ..strokeCap = StrokeCap.round;
-    canvas.drawArc(arcRect, 3.93, 0.43, false, paintYellow);
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

@@ -1,4 +1,3 @@
-import 'package:google_sign_in/google_sign_in.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'supabase_service.dart';
@@ -11,7 +10,6 @@ class AuthService {
   AuthService._internal();
 
   final _supabase = Supabase.instance.client;
-  final _googleSignIn = GoogleSignIn(scopes: ['email']);
 
   // ── Streams / current state ─────────────────────────────────────────────
 
@@ -32,29 +30,6 @@ class AuthService {
       OAuthProvider.apple,
       redirectTo: 'tradeestimateai://auth/callback',
     );
-  }
-
-  // ── Google ──────────────────────────────────────────────────────────────
-
-  /// Signs in with Google using native sign-in, then exchanges the ID token
-  /// with Supabase. Calls [ensureProfileExists] after a successful sign-in.
-  Future<void> signInWithGoogle() async {
-    final googleUser = await _googleSignIn.signIn();
-    if (googleUser == null) throw Exception('Google sign in cancelled');
-
-    final googleAuth = await googleUser.authentication;
-    final idToken = googleAuth.idToken;
-    final accessToken = googleAuth.accessToken;
-
-    if (idToken == null) throw Exception('No ID token from Google');
-
-    await _supabase.auth.signInWithIdToken(
-      provider: OAuthProvider.google,
-      idToken: idToken,
-      accessToken: accessToken,
-    );
-
-    await ensureProfileExists();
   }
 
   // ── Email / Password ─────────────────────────────────────────────────────
@@ -109,12 +84,10 @@ class AuthService {
 
   // ── Sign out ─────────────────────────────────────────────────────────────
 
-  /// Signs out from both Google (if signed in) and Supabase. Delegates to
-  /// [SupabaseService.signOut] so that the onboarding flag in secure storage
-  /// is also cleared — preventing the next user on the same device from
-  /// skipping onboarding.
+  /// Signs out from Supabase. Delegates to [SupabaseService.signOut] so that
+  /// the onboarding flag in secure storage is also cleared — preventing the
+  /// next user on the same device from skipping onboarding.
   Future<void> signOut() async {
-    await _googleSignIn.signOut();
     await SupabaseService().signOut(); // Clears both Supabase session and onboarding flag
   }
 }
