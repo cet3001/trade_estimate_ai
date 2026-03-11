@@ -115,19 +115,30 @@ class _NewEstimateScreenState extends State<NewEstimateScreen> {
   }
 
   Future<void> _loadProfile() async {
-    final profile = await _service.getProfile();
-    if (!mounted) return;
-    setState(() {
-      _profile = profile;
-      _entitlements = profile != null
-          ? Entitlements.fromUserProfile(profile)
-          : Entitlements.empty;
-      // Pre-seed live rate with saved default only when no prefill was provided
-      if (widget.prefillEstimate == null && profile?.defaultLaborRate != null) {
-        _liveLaborRate = profile!.defaultLaborRate!;
-        _laborRate = profile.defaultLaborRate!;
-      }
-    });
+    try {
+      final profile = await _service.getProfile();
+      if (!mounted) return;
+      setState(() {
+        _profile = profile;
+        _entitlements = profile != null
+            ? Entitlements.fromUserProfile(profile)
+            : Entitlements.empty;
+        // Pre-seed live rate with saved default only when no prefill was provided
+        if (widget.prefillEstimate == null && profile?.defaultLaborRate != null) {
+          _liveLaborRate = profile!.defaultLaborRate!;
+          _laborRate = profile.defaultLaborRate!;
+        }
+      });
+    } catch (e) {
+      // Network or database error: log and continue without profile data.
+      // The UI remains usable; profile-dependent fields simply won't be pre-filled.
+      debugPrint('[NewEstimateScreen] _loadProfile error: $e');
+      if (!mounted) return;
+      setState(() {
+        _profile = null;
+        _entitlements = Entitlements.empty;
+      });
+    }
   }
 
   // ---------------------------------------------------------------------------
@@ -208,7 +219,13 @@ class _NewEstimateScreenState extends State<NewEstimateScreen> {
     _saveLaborRate = (values['save_labor_rate'] as bool?) ?? false;
 
     if (_saveLaborRate && _laborRate > 0) {
-      await _service.updateProfile({'default_labor_rate': _laborRate});
+      try {
+        await _service.updateProfile({'default_labor_rate': _laborRate});
+      } catch (e) {
+        // Saving the default labor rate preference is non-fatal.
+        // Log the error and continue navigating to the next step.
+        debugPrint('[NewEstimateScreen] _onStep3Next updateProfile error: $e');
+      }
     }
     if (!mounted) return;
     _advanceTo(3);

@@ -1,4 +1,7 @@
 class UserProfile {
+  // Sentinel used by copyWith to distinguish "not provided" from explicit null.
+  static const _sentinel = Object();
+
   final String id;
   final String? fullName;
   final String? companyName;
@@ -79,36 +82,36 @@ class UserProfile {
   }
 
   UserProfile copyWith({
-    String? fullName,
-    String? companyName,
-    String? contractorName,
-    String? email,
-    String? phone,
-    String? licenseNumber,
-    String? logoUrl,
+    Object? fullName = _sentinel,
+    Object? companyName = _sentinel,
+    Object? contractorName = _sentinel,
+    Object? email = _sentinel,
+    Object? phone = _sentinel,
+    Object? licenseNumber = _sentinel,
+    Object? logoUrl = _sentinel,
     bool? isAdmin,
     String? subscriptionStatus,
     int? creditsRemaining,
     int? totalEstimatesGenerated,
-    double? defaultLaborRate,
-    String? defaultTrade,
+    Object? defaultLaborRate = _sentinel,
+    Object? defaultTrade = _sentinel,
   }) {
     return UserProfile(
       id: id,
-      fullName: fullName ?? this.fullName,
-      companyName: companyName ?? this.companyName,
-      contractorName: contractorName ?? this.contractorName,
-      email: email ?? this.email,
-      phone: phone ?? this.phone,
-      licenseNumber: licenseNumber ?? this.licenseNumber,
-      logoUrl: logoUrl ?? this.logoUrl,
+      fullName: fullName == _sentinel ? this.fullName : fullName as String?,
+      companyName: companyName == _sentinel ? this.companyName : companyName as String?,
+      contractorName: contractorName == _sentinel ? this.contractorName : contractorName as String?,
+      email: email == _sentinel ? this.email : email as String?,
+      phone: phone == _sentinel ? this.phone : phone as String?,
+      licenseNumber: licenseNumber == _sentinel ? this.licenseNumber : licenseNumber as String?,
+      logoUrl: logoUrl == _sentinel ? this.logoUrl : logoUrl as String?,
       isAdmin: isAdmin ?? this.isAdmin,
       subscriptionStatus: subscriptionStatus ?? this.subscriptionStatus,
       creditsRemaining: creditsRemaining ?? this.creditsRemaining,
       totalEstimatesGenerated:
           totalEstimatesGenerated ?? this.totalEstimatesGenerated,
-      defaultLaborRate: defaultLaborRate ?? this.defaultLaborRate,
-      defaultTrade: defaultTrade ?? this.defaultTrade,
+      defaultLaborRate: defaultLaborRate == _sentinel ? this.defaultLaborRate : defaultLaborRate as double?,
+      defaultTrade: defaultTrade == _sentinel ? this.defaultTrade : defaultTrade as String?,
       createdAt: createdAt,
       updatedAt: DateTime.now(),
     );

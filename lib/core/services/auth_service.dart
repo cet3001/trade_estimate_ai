@@ -74,8 +74,8 @@ class AuthService {
     final user = _supabase.auth.currentUser;
     if (user == null) return;
 
-    final contractorName = user.userMetadata?['full_name'] as String? ??
-        user.userMetadata?['name'] as String?;
+    final rawName = user.userMetadata?['full_name'] ?? user.userMetadata?['name'];
+    final contractorName = rawName is String ? rawName : null;
 
     final upsertData = <String, dynamic>{
       'id': user.id,

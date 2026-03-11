@@ -235,9 +235,9 @@ class _BusinessInfoPageState extends State<_BusinessInfoPage> {
     if (form == null || !form.saveAndValidate()) return;
 
     final values = form.value;
-    final fullName = (values['full_name'] as String).trim();
-    final companyName = (values['company_name'] as String).trim();
-    final email = (values['email'] as String).trim();
+    final fullName = ((values['full_name'] as String?) ?? '').trim();
+    final companyName = ((values['company_name'] as String?) ?? '').trim();
+    final email = ((values['email'] as String?) ?? '').trim();
     final phone = (values['phone'] as String?)?.trim();
     final licenseNumber = (values['license_number'] as String?)?.trim();
 
