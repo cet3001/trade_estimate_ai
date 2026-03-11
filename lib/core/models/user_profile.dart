@@ -10,6 +10,7 @@ class UserProfile {
   final String? phone;
   final String? licenseNumber;
   final String? logoUrl;
+  final String? emailSignature;
   final bool isAdmin;
   final String subscriptionStatus; // 'none' | 'active' | 'expired'
   final int creditsRemaining;
@@ -28,6 +29,7 @@ class UserProfile {
     this.phone,
     this.licenseNumber,
     this.logoUrl,
+    this.emailSignature,
     this.isAdmin = false,
     this.subscriptionStatus = 'none',
     this.creditsRemaining = 0,
@@ -48,6 +50,7 @@ class UserProfile {
       phone: json['phone'] as String?,
       licenseNumber: json['license_number'] as String?,
       logoUrl: json['logo_url'] as String?,
+      emailSignature: json['email_signature'] as String?,
       isAdmin: (json['is_admin'] as bool?) ?? false,
       subscriptionStatus:
           (json['subscription_status'] as String?) ?? 'none',
@@ -71,6 +74,7 @@ class UserProfile {
       'phone': phone,
       'license_number': licenseNumber,
       'logo_url': logoUrl,
+      'email_signature': emailSignature,
       'subscription_status': subscriptionStatus,
       'credits_remaining': creditsRemaining,
       'total_estimates_generated': totalEstimatesGenerated,
@@ -89,6 +93,7 @@ class UserProfile {
     Object? phone = _sentinel,
     Object? licenseNumber = _sentinel,
     Object? logoUrl = _sentinel,
+    Object? emailSignature = _sentinel,
     bool? isAdmin,
     String? subscriptionStatus,
     int? creditsRemaining,
@@ -105,6 +110,7 @@ class UserProfile {
       phone: phone == _sentinel ? this.phone : phone as String?,
       licenseNumber: licenseNumber == _sentinel ? this.licenseNumber : licenseNumber as String?,
       logoUrl: logoUrl == _sentinel ? this.logoUrl : logoUrl as String?,
+      emailSignature: emailSignature == _sentinel ? this.emailSignature : emailSignature as String?,
       isAdmin: isAdmin ?? this.isAdmin,
       subscriptionStatus: subscriptionStatus ?? this.subscriptionStatus,
       creditsRemaining: creditsRemaining ?? this.creditsRemaining,

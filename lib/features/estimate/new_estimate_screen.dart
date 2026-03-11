@@ -128,6 +128,18 @@ class _NewEstimateScreenState extends State<NewEstimateScreen> {
           _liveLaborRate = profile!.defaultLaborRate!;
           _laborRate = profile.defaultLaborRate!;
         }
+        // Pre-seed trade selection from profile default only when no prefill was provided
+        if (widget.prefillEstimate == null &&
+            _selectedTrade == null &&
+            profile?.defaultTrade != null) {
+          try {
+            _selectedTrade = TradeType.values.firstWhere(
+              (t) => t.value == profile!.defaultTrade,
+            );
+          } catch (_) {
+            // defaultTrade value not found in enum — ignore
+          }
+        }
       });
     } catch (e) {
       // Network or database error: log and continue without profile data.

@@ -155,6 +155,7 @@ function buildEmailHtml(
   const phone = profile.phone as string | null;
   const email = profile.email as string;
   const license = profile.license_number as string | null;
+  const emailSignature = (profile.email_signature as string | null)?.trim() || null;
 
   const laborTotal = (
     (estimate.labor_hours as number) * (estimate.labor_rate as number)
@@ -236,6 +237,12 @@ function buildEmailHtml(
           <p style="margin:16px 0 4px;font-size:11px;font-weight:600;color:#8E8E93;letter-spacing:0.8px;text-transform:uppercase;">Terms &amp; Conditions</p>
           <p style="margin:0;font-size:11px;line-height:1.5;color:#8E8E93;">${terms}</p>
         </td></tr>
+
+        <!-- Signature (only if set) -->
+        ${emailSignature ? `
+        <tr><td style="padding:0 32px 24px;">
+          <p style="margin:0;font-size:13px;line-height:1.6;color:#1C1C1E;white-space:pre-line;">${escapeHtml(emailSignature)}</p>
+        </td></tr>` : ''}
 
         <!-- Footer -->
         <tr><td style="padding:16px 32px;background-color:#f5f5f5;border-top:1px solid #e5e5e5;">

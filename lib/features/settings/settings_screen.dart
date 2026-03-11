@@ -28,6 +28,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   // Controllers
   final _nameController = TextEditingController();
   final _labourRateController = TextEditingController();
+  final _emailSignatureController = TextEditingController();
 
   // State
   UserProfile? _profile;
@@ -50,6 +51,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   void dispose() {
     _nameController.dispose();
     _labourRateController.dispose();
+    _emailSignatureController.dispose();
     super.dispose();
   }
 
@@ -67,6 +69,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         _nameController.text = profile?.fullName ?? '';
         final rate = profile?.defaultLaborRate;
         _labourRateController.text = rate != null ? rate.toStringAsFixed(2) : '';
+        _emailSignatureController.text = profile?.emailSignature ?? '';
         _selectedTrade = _tradeFromString(profile?.defaultTrade);
         _loadingProfile = false;
       });
@@ -123,6 +126,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
       if (_selectedTrade != null) {
         updates['default_trade'] = _selectedTrade!.value;
       }
+
+      final sigText = _emailSignatureController.text.trim();
+      updates['email_signature'] = sigText.isEmpty ? null : sigText;
 
       final updated = await _service.updateProfile(updates);
       if (!mounted) return;
@@ -434,6 +440,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
           _buildSectionHeader('PROFILE'),
           _buildProfileSection(),
           const SizedBox(height: AppSpacing.xxl),
+          _buildSectionHeader('PREFERENCES'),
+          _buildPreferencesSection(),
+          const SizedBox(height: AppSpacing.xxl),
           _buildSectionHeader('SUBSCRIPTION'),
           _buildSubscriptionSection(),
           const SizedBox(height: AppSpacing.xxl),
@@ -579,6 +588,67 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildPreferencesSection() {
+    return Container(
+      color: AppColors.surface,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.lg,
+          vertical: AppSpacing.sm,
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Email Signature',
+              style: AppTextStyles.label.copyWith(color: AppColors.textSecondary),
+            ),
+            const SizedBox(height: AppSpacing.xs),
+            TextFormField(
+              controller: _emailSignatureController,
+              maxLines: 4,
+              minLines: 2,
+              keyboardType: TextInputType.multiline,
+              textCapitalization: TextCapitalization.sentences,
+              style: AppTextStyles.body,
+              decoration: InputDecoration(
+                hintText: 'e.g. John Smith\nABC Plumbing LLC\n(555) 123-4567',
+                hintStyle: AppTextStyles.body.copyWith(color: AppColors.textTertiary),
+                filled: true,
+                fillColor: AppColors.surfaceElevated,
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.md,
+                  vertical: AppSpacing.sm,
+                ),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(AppSpacing.md),
+                  borderSide: const BorderSide(color: AppColors.borderDefault),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(AppSpacing.md),
+                  borderSide: const BorderSide(color: AppColors.borderDefault),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(AppSpacing.md),
+                  borderSide: const BorderSide(
+                    color: AppColors.borderActive,
+                    width: 2,
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: AppSpacing.xs),
+            Text(
+              'Appended to the bottom of estimate emails.',
+              style: AppTextStyles.caption.copyWith(color: AppColors.textTertiary),
+            ),
+            const SizedBox(height: AppSpacing.sm),
+          ],
+        ),
       ),
     );
   }
