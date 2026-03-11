@@ -109,7 +109,7 @@ Deno.serve(async (req) => {
     // 7. Fetch profile — distinguish a real DB error (500) from a missing row
     const { data: profile, error: profileError } = await supabaseAdmin
       .from('profiles')
-      .select('subscription_status, credits_remaining')
+      .select('subscription_status, credits_remaining, is_admin')
       .eq('id', user.id)
       .single();
 
@@ -128,11 +128,12 @@ Deno.serve(async (req) => {
     }
 
     const hasSubscription = profile?.subscription_status === 'active';
+    const isAdmin = profile?.is_admin === true;
 
-    // 8. Atomically deduct a credit (or skip for active subscribers).
+    // 8. Atomically deduct a credit (or skip for active subscribers / admins).
     //    deduct_one_credit performs a conditional UPDATE in a single statement,
     //    eliminating the check-then-act race condition.
-    if (!hasSubscription) {
+    if (!hasSubscription && !isAdmin) {
       const { data: deducted, error: rpcError } = await supabaseAdmin
         .rpc('deduct_one_credit', { p_user_id: user.id });
       if (rpcError) {

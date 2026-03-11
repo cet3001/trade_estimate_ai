@@ -15,6 +15,7 @@ class CreditBadge extends StatelessWidget {
   });
 
   Color get _badgeColor {
+    if (entitlements.isAdmin) return AppColors.positive;
     if (entitlements.hasActiveSubscription) return AppColors.positive;
     if (entitlements.creditsRemaining > 3) return AppColors.positive;
     if (entitlements.creditsRemaining > 0) return AppColors.warning;
@@ -22,6 +23,7 @@ class CreditBadge extends StatelessWidget {
   }
 
   String get _badgeText {
+    if (entitlements.isAdmin) return '\u221e Admin';
     if (entitlements.hasActiveSubscription) return 'Subscribed';
     if (entitlements.creditsRemaining == 0) return 'No credits';
     return '${entitlements.creditsRemaining} credits remaining';

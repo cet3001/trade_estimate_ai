@@ -6,6 +6,7 @@ class UserProfile {
   final String? phone;
   final String? licenseNumber;
   final String? logoUrl;
+  final bool isAdmin;
   final String subscriptionStatus; // 'none' | 'active' | 'expired'
   final int creditsRemaining;
   final int totalEstimatesGenerated;
@@ -22,6 +23,7 @@ class UserProfile {
     this.phone,
     this.licenseNumber,
     this.logoUrl,
+    this.isAdmin = false,
     this.subscriptionStatus = 'none',
     this.creditsRemaining = 0,
     this.totalEstimatesGenerated = 0,
@@ -40,6 +42,7 @@ class UserProfile {
       phone: json['phone'] as String?,
       licenseNumber: json['license_number'] as String?,
       logoUrl: json['logo_url'] as String?,
+      isAdmin: (json['is_admin'] as bool?) ?? false,
       subscriptionStatus:
           (json['subscription_status'] as String?) ?? 'none',
       creditsRemaining: (json['credits_remaining'] as int?) ?? 0,
@@ -61,6 +64,7 @@ class UserProfile {
       'phone': phone,
       'license_number': licenseNumber,
       'logo_url': logoUrl,
+      'is_admin': isAdmin,
       'subscription_status': subscriptionStatus,
       'credits_remaining': creditsRemaining,
       'total_estimates_generated': totalEstimatesGenerated,
@@ -78,6 +82,7 @@ class UserProfile {
     String? phone,
     String? licenseNumber,
     String? logoUrl,
+    bool? isAdmin,
     String? subscriptionStatus,
     int? creditsRemaining,
     int? totalEstimatesGenerated,
@@ -92,6 +97,7 @@ class UserProfile {
       phone: phone ?? this.phone,
       licenseNumber: licenseNumber ?? this.licenseNumber,
       logoUrl: logoUrl ?? this.logoUrl,
+      isAdmin: isAdmin ?? this.isAdmin,
       subscriptionStatus: subscriptionStatus ?? this.subscriptionStatus,
       creditsRemaining: creditsRemaining ?? this.creditsRemaining,
       totalEstimatesGenerated:
