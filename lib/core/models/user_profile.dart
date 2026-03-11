@@ -64,7 +64,6 @@ class UserProfile {
       'phone': phone,
       'license_number': licenseNumber,
       'logo_url': logoUrl,
-      'is_admin': isAdmin,
       'subscription_status': subscriptionStatus,
       'credits_remaining': creditsRemaining,
       'total_estimates_generated': totalEstimatesGenerated,
