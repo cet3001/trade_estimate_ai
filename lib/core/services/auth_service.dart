@@ -66,7 +66,7 @@ class AuthService {
 
   /// Ensures a minimal profile row exists for the current user. Safe to call
   /// multiple times — uses upsert with `ignoreDuplicates: true` so existing
-  /// rows are never overwritten. Only called after Google / Email auth; Apple
+  /// rows are never overwritten. Only called after Email auth; Apple
   /// goes through a redirect and its profile creation is handled by the auth
   /// state listener in the UI layer (which calls SupabaseService.createProfile
   /// with full onboarding data).

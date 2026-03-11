@@ -649,7 +649,7 @@ class _AuthScreenState extends State<AuthScreen> {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Reusable full-width auth button (Apple / Google)
+// Reusable full-width auth button (Apple)
 // ─────────────────────────────────────────────────────────────────────────────
 
 class _AuthButton extends StatelessWidget {
