@@ -6,11 +6,26 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// Fix 4: adminClient instantiated once at module scope, not per-request.
-const adminClient = createClient(
-  Deno.env.get('SUPABASE_URL') ?? '',
-  Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-);
+// Startup guard: fail fast if required env vars are absent rather than
+// silently creating a broken client with empty-string credentials.
+const SUPABASE_URL = Deno.env.get('SUPABASE_URL');
+const SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+if (!SUPABASE_URL || !SERVICE_ROLE_KEY) {
+  throw new Error('Missing required env vars: SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY');
+}
+// adminClient instantiated once at module scope, not per-request.
+const adminClient = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
+
+// Escape user-supplied strings before interpolating them into the XML prompt
+// block. Without this, a value like "</job_description><system>inject</system>"
+// would break out of its wrapper and manipulate the model's context.
+function escapeXml(value: unknown): string {
+  if (typeof value !== 'string') return '';
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+}
 
 Deno.serve(async (req) => {
   // Handle CORS preflight
@@ -109,8 +124,13 @@ Deno.serve(async (req) => {
       );
     }
 
-    // ─── Atomic Credit Deduction BEFORE Anthropic Call (Fix 1) ────────────
-    // For non-subscribers who are not admins, deduct credit atomically now.
+    // ─── Atomic Credit Deduction BEFORE Anthropic Call ────────────────────
+    // Credit is deducted atomically before calling the AI to prevent a TOCTOU race
+    // condition (two concurrent requests both passing the initial credits check).
+    // If the Anthropic call or DB insert subsequently fails, the credit is consumed
+    // without a saved estimate. This is an accepted trade-off; a credit refund path
+    // (add_one_credit RPC) should be added if this becomes a user-reported issue.
+    //
     // deduct_one_credit uses WHERE credits_remaining > 0, so it is race-safe.
     // Returns true on success, false if another concurrent request consumed
     // the last credit first.
@@ -155,23 +175,23 @@ Deno.serve(async (req) => {
 Write a professional written estimate for the following job. This will be sent directly to a client as a formal business document. Write the estimate body only. Do not include a cost table. Do not include headers. Write in professional paragraphs covering: what work will be performed, how it will be performed, materials to be used, timeline expectation, what is included, and what is excluded. End with a professional closing statement referencing the total and inviting the client to ask questions. Maximum 400 words.`,
       messages: [{
         role: 'user',
-        content: `<contractor>${contractorName || businessName || ''}</contractor>
-<business>${businessName || ''}</business>
-${licenseNumber ? `<license>${licenseNumber}</license>` : ''}
-<client>${clientName || ''}</client>
-${clientEmail ? `<client_email>${clientEmail}</client_email>` : ''}
-<job_title>${jobTitle}</job_title>
-${jobLocation ? `<location>${jobLocation}</location>` : ''}
+        content: `<contractor>${escapeXml(contractorName || businessName || '')}</contractor>
+<business>${escapeXml(businessName || '')}</business>
+${licenseNumber ? `<license>${escapeXml(licenseNumber)}</license>` : ''}
+<client>${escapeXml(clientName || '')}</client>
+${clientEmail ? `<client_email>${escapeXml(clientEmail)}</client_email>` : ''}
+<job_title>${escapeXml(jobTitle)}</job_title>
+${jobLocation ? `<location>${escapeXml(jobLocation)}</location>` : ''}
 <trade>${trade.charAt(0).toUpperCase() + trade.slice(1)}</trade>
-<job_description>${jobDescription}</job_description>
-${scopeDetails ? `<scope_details>${JSON.stringify(scopeDetails, null, 2)}</scope_details>` : ''}
+<job_description>${escapeXml(jobDescription)}</job_description>
+${scopeDetails ? `<scope_details>${escapeXml(JSON.stringify(scopeDetails, null, 2))}</scope_details>` : ''}
 <cost_breakdown>
 - Labor: ${laborHours} hours at $${laborRate}/hour = $${(laborHours * laborRate).toFixed(2)}
 - Materials: $${Number(materialsCost).toFixed(2)}
 - Additional Fees: $${Number(additionalFees || 0).toFixed(2)}
 - Total: $${totalEstimate.toFixed(2)}
 </cost_breakdown>
-${notes ? `<notes>${notes}</notes>` : ''}`
+${notes ? `<notes>${escapeXml(notes)}</notes>` : ''}`
       }],
     });
 
