@@ -188,14 +188,13 @@ class _AuthScreenState extends State<AuthScreen> {
     } catch (e) {
       if (mounted) {
         final msg = e.toString();
-        if (msg.contains('cancelled') || msg.contains('canceled')) {
+        if (!msg.contains('cancelled') && !msg.contains('canceled')) {
           // User dismissed the picker — not an error worth displaying.
-          setState(() => _isLoadingGoogle = false);
-        } else {
           _setError(_friendlyError(msg));
-          setState(() => _isLoadingGoogle = false);
         }
       }
+    } finally {
+      if (mounted) setState(() => _isLoadingGoogle = false);
     }
   }
 
@@ -233,8 +232,9 @@ class _AuthScreenState extends State<AuthScreen> {
     } catch (e) {
       if (mounted) {
         _setError(_friendlyError(e.toString()));
-        setState(() => _isLoadingEmail = false);
       }
+    } finally {
+      if (mounted) setState(() => _isLoadingEmail = false);
     }
   }
 
