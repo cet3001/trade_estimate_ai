@@ -52,7 +52,23 @@ class SupabaseService {
         .maybeSingle();
 
     if (response == null) return null;
-    return UserProfile.fromJson(response);
+
+    // has_team_access is a computed field — fetch from RPC and inject.
+    bool hasTeamAccess = false;
+    try {
+      final result = await client.rpc(
+        'has_team_access',
+        params: {'uid': userId},
+      );
+      hasTeamAccess = (result as bool?) ?? false;
+    } catch (_) {
+      // Fail-open: if RPC fails, treat as no team access.
+    }
+
+    final profileMap = Map<String, dynamic>.from(response);
+    profileMap['has_team_access'] = hasTeamAccess;
+
+    return UserProfile.fromJson(profileMap);
   }
 
   Future<UserProfile?> createProfile({
@@ -234,5 +250,46 @@ class SupabaseService {
   Future<void> deleteAccount() async {
     if (currentUser == null) return;
     await client.rpc('delete_account');
+  }
+
+  Future<void> inviteTeamMember(String email) async {
+    await client.functions.invoke(
+      'invite-team-member',
+      body: {'email': email},
+    );
+  }
+
+  /// Returns the team row for the current user, or null if they are not in a team.
+  Future<Map<String, dynamic>?> getTeam() async {
+    final userId = currentUser?.id;
+    if (userId == null) return null;
+
+    // Get team_id from profiles
+    final profile = await client
+        .from('profiles')
+        .select('team_id')
+        .eq('id', userId)
+        .maybeSingle();
+    final teamId = profile?['team_id'] as String?;
+    if (teamId == null) return null;
+
+    final team = await client
+        .from('teams')
+        .select()
+        .eq('id', teamId)
+        .maybeSingle();
+    return team;
+  }
+
+  /// Returns the list of team members for [teamId].
+  Future<List<Map<String, dynamic>>> getTeamMembers(String teamId) async {
+    final response = await client
+        .from('team_members')
+        .select()
+        .eq('team_id', teamId)
+        .order('joined_at', ascending: true);
+    return (response as List)
+        .map((e) => Map<String, dynamic>.from(e as Map<String, dynamic>))
+        .toList();
   }
 }

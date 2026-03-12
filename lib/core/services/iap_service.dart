@@ -15,14 +15,20 @@ class IapService extends ChangeNotifier {
   static const String kSubscriptionMonthly =
       'com.blackstonerow.tradeestimateai.subscription.monthly';
   static const String kCredits5 =
-      'com.blackstonerow.tradeestimateai.credits.5';
+      'com.blackstonerow.tradeestimateai.credits.5c';
   static const String kCredits15 =
       'com.blackstonerow.tradeestimateai.credits.15';
+  static const String kSubscriptionTeam3 =
+      'com.blackstonerow.tradeestimateai.subscription.team3';
+  static const String kSubscriptionTeam5 =
+      'com.blackstonerow.tradeestimateai.subscription.team5';
 
   static const Set<String> _productIds = {
     kSubscriptionMonthly,
     kCredits5,
     kCredits15,
+    kSubscriptionTeam3,
+    kSubscriptionTeam5,
   };
 
   List<ProductDetails> _products = [];
@@ -41,14 +47,14 @@ class IapService extends ChangeNotifier {
   Future<void> initialize() async {
     _isAvailable = await _iap.isAvailable();
     if (!_isAvailable) {
-      debugPrint('[IAP] Store not available');
+      if (kDebugMode) debugPrint('[IAP] Store not available');
       return;
     }
 
     _subscription = _iap.purchaseStream.listen(
       _handlePurchaseUpdate,
       onError: (Object error) {
-        debugPrint('[IAP] Purchase stream error: $error');
+        if (kDebugMode) debugPrint('[IAP] Purchase stream error: $error');
         _lastError = error.toString();
         notifyListeners();
       },
@@ -62,10 +68,10 @@ class IapService extends ChangeNotifier {
         await _iap.queryProductDetails(_productIds);
 
     if (response.error != null) {
-      debugPrint('[IAP] Product load error: ${response.error}');
+      if (kDebugMode) debugPrint('[IAP] Product load error: ${response.error}');
     }
     if (response.notFoundIDs.isNotEmpty) {
-      debugPrint('[IAP] Products not found: ${response.notFoundIDs}');
+      if (kDebugMode) debugPrint('[IAP] Products not found: ${response.notFoundIDs}');
     }
 
     _products = response.productDetails;
@@ -84,6 +90,26 @@ class IapService extends ChangeNotifier {
     final product = getProduct(kSubscriptionMonthly);
     if (product == null) {
       _lastError = 'Subscription product not available';
+      notifyListeners();
+      return false;
+    }
+    return _purchase(product, consumable: false);
+  }
+
+  Future<bool> buyTeam3Subscription() async {
+    final product = getProduct(kSubscriptionTeam3);
+    if (product == null) {
+      _lastError = 'Team 3-seat subscription not available';
+      notifyListeners();
+      return false;
+    }
+    return _purchase(product, consumable: false);
+  }
+
+  Future<bool> buyTeam5Subscription() async {
+    final product = getProduct(kSubscriptionTeam5);
+    if (product == null) {
+      _lastError = 'Team 5-seat subscription not available';
       notifyListeners();
       return false;
     }
@@ -179,7 +205,7 @@ class IapService extends ChangeNotifier {
   Future<bool> _verifyAndGrant(PurchaseDetails purchase) async {
     final user = Supabase.instance.client.auth.currentUser;
     if (user == null) {
-      debugPrint('[IAP] No authenticated user — leaving transaction pending for retry');
+      if (kDebugMode) debugPrint('[IAP] No authenticated user — leaving transaction pending for retry');
       _purchasePending = false;
       notifyListeners();
       return false; // DO NOT complete purchase
@@ -197,17 +223,17 @@ class IapService extends ChangeNotifier {
 
       if (response.status != 200) {
         _lastError = 'Server verification failed (${response.status})';
-        debugPrint('[IAP] Verification failed: ${response.data}');
+        if (kDebugMode) debugPrint('[IAP] Verification failed: ${response.data}');
         _purchasePending = false;
         notifyListeners();
         return false; // DO NOT complete purchase
       }
 
-      debugPrint('[IAP] Purchase verified: ${purchase.productID}');
+      if (kDebugMode) debugPrint('[IAP] Purchase verified: ${purchase.productID}');
       return true; // OK to complete
     } catch (e) {
       _lastError = 'Verification error: $e';
-      debugPrint('[IAP] Verification error: $e');
+      if (kDebugMode) debugPrint('[IAP] Verification error: $e');
       _purchasePending = false;
       notifyListeners();
       return false; // DO NOT complete purchase

@@ -8,6 +8,7 @@ import '../../core/constants/app_text_styles.dart';
 import '../../core/constants/trade_templates.dart';
 import '../../core/models/entitlements.dart';
 import '../../core/models/user_profile.dart';
+import '../../core/services/iap_service.dart';
 import '../../core/services/supabase_service.dart';
 
 // ---------------------------------------------------------------------------
@@ -27,6 +28,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   // Controllers
   final _nameController = TextEditingController();
+  final _contractorNameController = TextEditingController();
   final _labourRateController = TextEditingController();
   final _emailSignatureController = TextEditingController();
 
@@ -36,6 +38,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   bool _savingProfile = false;
   bool _signingOut = false;
   bool _deletingAccount = false;
+  bool _restoringPurchases = false;
   String? _profileSaveError;
   bool _profileSaveSuccess = false;
 
@@ -50,6 +53,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   @override
   void dispose() {
     _nameController.dispose();
+    _contractorNameController.dispose();
     _labourRateController.dispose();
     _emailSignatureController.dispose();
     super.dispose();
@@ -67,6 +71,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       setState(() {
         _profile = profile;
         _nameController.text = profile?.fullName ?? '';
+        _contractorNameController.text = profile?.contractorName ?? '';
         final rate = profile?.defaultLaborRate;
         _labourRateController.text = rate != null ? rate.toStringAsFixed(2) : '';
         _emailSignatureController.text = profile?.emailSignature ?? '';
@@ -76,6 +81,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     } catch (_) {
       if (!mounted) return;
       setState(() => _loadingProfile = false);
+      _showSnackError('Failed to load profile. Please try again.');
     }
   }
 
@@ -113,6 +119,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
     try {
       final updates = <String, dynamic>{
         'full_name': _nameController.text.trim(),
+        'contractor_name': _contractorNameController.text.trim().isEmpty
+            ? null
+            : _contractorNameController.text.trim(),
       };
 
       final rateText = _labourRateController.text.trim();
@@ -170,6 +179,37 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   void _openPaywall() {
     Navigator.of(context).pushNamed('/paywall');
+  }
+
+  Future<void> _restorePurchases() async {
+    setState(() => _restoringPurchases = true);
+    await IapService().restorePurchases();
+    if (!mounted) return;
+    setState(() => _restoringPurchases = false);
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          'Purchase restore initiated. Active purchases will be applied shortly.',
+          style: AppTextStyles.body.copyWith(color: AppColors.textPrimary),
+        ),
+        backgroundColor: AppColors.surfaceElevated,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppSpacing.md),
+        ),
+        margin: const EdgeInsets.all(AppSpacing.lg),
+      ),
+    );
+  }
+
+  Future<void> _openUrl(String url) async {
+    final uri = Uri.parse(url);
+    if (!await canLaunchUrl(uri)) {
+      if (!mounted) return;
+      _showSnackError('Unable to open link.');
+      return;
+    }
+    await launchUrl(uri, mode: LaunchMode.externalApplication);
   }
 
   // ---------------------------------------------------------------------------
@@ -326,7 +366,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             BorderRadius.circular(AppSpacing.md),
                         borderSide: const BorderSide(
                           color: AppColors.negative,
-                          width: 2,
+                          width: AppSpacing.focusedBorderWidth,
                         ),
                       ),
                     ),
@@ -448,6 +488,30 @@ class _SettingsScreenState extends State<SettingsScreen> {
           const SizedBox(height: AppSpacing.xxl),
           _buildSectionHeader('ACCOUNT'),
           _buildAccountSection(),
+          const SizedBox(height: AppSpacing.xxl),
+          _buildSectionHeader('LEGAL'),
+          _buildLegalSection(),
+          const SizedBox(height: AppSpacing.xxl),
+          Center(
+            child: Column(
+              children: [
+                ClipOval(
+                  child: Image.asset(
+                    'assets/images/logo.png',
+                    width: 64,
+                    height: 64,
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.sm),
+                Text(
+                  'TradeEstimate AI',
+                  style: AppTextStyles.caption.copyWith(
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+              ],
+            ),
+          ),
           const SizedBox(height: AppSpacing.huge),
         ],
       ),
@@ -497,6 +561,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
               }
               return null;
             },
+          ),
+          _buildDivider(),
+
+          // Business / contractor name
+          _buildTextFieldTile(
+            label: 'Business / Contractor Name',
+            controller: _contractorNameController,
+            hintText: 'e.g. ABC Plumbing LLC',
+            keyboardType: TextInputType.name,
+            textCapitalization: TextCapitalization.words,
           ),
           _buildDivider(),
 
@@ -636,7 +710,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   borderRadius: BorderRadius.circular(AppSpacing.md),
                   borderSide: const BorderSide(
                     color: AppColors.borderActive,
-                    width: 2,
+                    width: AppSpacing.focusedBorderWidth,
                   ),
                 ),
               ),
@@ -708,7 +782,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 borderRadius: BorderRadius.circular(AppSpacing.md),
                 borderSide: const BorderSide(
                   color: AppColors.borderActive,
-                  width: 2,
+                  width: AppSpacing.focusedBorderWidth,
                 ),
               ),
               errorBorder: OutlineInputBorder(
@@ -718,7 +792,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               focusedErrorBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(AppSpacing.md),
                 borderSide:
-                    const BorderSide(color: AppColors.negative, width: 2),
+                    const BorderSide(color: AppColors.negative, width: AppSpacing.focusedBorderWidth),
               ),
             ),
           ),
@@ -802,7 +876,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 borderRadius: BorderRadius.circular(AppSpacing.md),
                 borderSide: const BorderSide(
                   color: AppColors.borderActive,
-                  width: 2,
+                  width: AppSpacing.focusedBorderWidth,
                 ),
               ),
             ),
@@ -864,49 +938,75 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
           _buildDivider(),
 
-          // Action button
+          // Action button + Restore Purchases
           Padding(
             padding: const EdgeInsets.symmetric(
               horizontal: AppSpacing.lg,
               vertical: AppSpacing.md,
             ),
-            child: SizedBox(
-              width: double.infinity,
-              height: AppSpacing.buttonHeight,
-              child: isSubscribed
-                  ? ElevatedButton(
-                      onPressed: _openSubscriptionManagement,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.surfaceElevated,
-                        foregroundColor: AppColors.textPrimary,
-                        elevation: 0,
-                        side: const BorderSide(color: AppColors.borderDefault),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(AppSpacing.md),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                SizedBox(
+                  width: double.infinity,
+                  height: AppSpacing.buttonHeight,
+                  child: isSubscribed
+                      ? ElevatedButton(
+                          onPressed: _openSubscriptionManagement,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.surfaceElevated,
+                            foregroundColor: AppColors.textPrimary,
+                            elevation: 0,
+                            side: const BorderSide(color: AppColors.borderDefault),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(AppSpacing.md),
+                            ),
+                          ),
+                          child: Text(
+                            'Manage Subscription',
+                            style: AppTextStyles.body
+                                .copyWith(color: AppColors.accent),
+                          ),
+                        )
+                      : ElevatedButton(
+                          onPressed: _openPaywall,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.positive,
+                            foregroundColor: AppColors.textPrimary,
+                            elevation: 0,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(AppSpacing.md),
+                            ),
+                          ),
+                          child: Text(
+                            'Upgrade to Pro',
+                            style: AppTextStyles.heading2
+                                .copyWith(color: AppColors.textPrimary),
+                          ),
                         ),
-                      ),
-                      child: Text(
-                        'Manage Subscription',
-                        style: AppTextStyles.body
-                            .copyWith(color: AppColors.accent),
-                      ),
-                    )
-                  : ElevatedButton(
-                      onPressed: _openPaywall,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.positive,
-                        foregroundColor: AppColors.textPrimary,
-                        elevation: 0,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(AppSpacing.md),
-                        ),
-                      ),
-                      child: Text(
-                        'Upgrade to Pro',
-                        style: AppTextStyles.heading2
-                            .copyWith(color: AppColors.textPrimary),
-                      ),
-                    ),
+                ),
+                const SizedBox(height: AppSpacing.xs),
+                Center(
+                  child: TextButton(
+                    onPressed: _restoringPurchases ? null : _restorePurchases,
+                    child: _restoringPurchases
+                        ? const SizedBox(
+                            width: AppSpacing.lg,
+                            height: AppSpacing.lg,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor: AlwaysStoppedAnimation<Color>(
+                                  AppColors.accent),
+                            ),
+                          )
+                        : Text(
+                            'Restore Purchases',
+                            style: AppTextStyles.body
+                                .copyWith(color: AppColors.accent),
+                          ),
+                  ),
+                ),
+              ],
             ),
           ),
         ],
@@ -944,10 +1044,22 @@ class _SettingsScreenState extends State<SettingsScreen> {
   // ---------------------------------------------------------------------------
 
   Widget _buildAccountSection() {
+    final profile = _profile;
     return Container(
       color: AppColors.surface,
       child: Column(
         children: [
+          // Team management (visible only when user has team access)
+          if (profile != null && profile.hasTeamAccess) ...[
+            ListTile(
+              leading: const Icon(Icons.people_outline),
+              title: const Text('Team Management'),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => Navigator.of(context).pushNamed('/team'),
+            ),
+            _buildDivider(),
+          ],
+
           // Sign out
           ListTile(
             tileColor: AppColors.surface,
@@ -1027,6 +1139,41 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
         ),
       ],
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // Section: Legal
+  // ---------------------------------------------------------------------------
+
+  Widget _buildLegalSection() {
+    return Container(
+      color: AppColors.surface,
+      child: Column(
+        children: [
+          ListTile(
+            tileColor: AppColors.surface,
+            title: Text('Privacy Policy', style: AppTextStyles.body),
+            trailing: const Icon(
+              Icons.open_in_new,
+              color: AppColors.textTertiary,
+              size: AppSpacing.lg,
+            ),
+            onTap: () => _openUrl('https://tradeestimateai.com/privacy'),
+          ),
+          _buildDivider(),
+          ListTile(
+            tileColor: AppColors.surface,
+            title: Text('Terms of Service', style: AppTextStyles.body),
+            trailing: const Icon(
+              Icons.open_in_new,
+              color: AppColors.textTertiary,
+              size: AppSpacing.lg,
+            ),
+            onTap: () => _openUrl('https://tradeestimateai.com/terms'),
+          ),
+        ],
+      ),
     );
   }
 

@@ -4,6 +4,7 @@ import 'core/constants/app_colors.dart';
 import 'core/constants/app_spacing.dart';
 import 'core/models/estimate.dart';
 import 'core/services/supabase_service.dart';
+import 'core/services/device_session_service.dart';
 import 'features/auth/auth_screen.dart';
 import 'features/home/home_screen.dart';
 import 'features/onboarding/onboarding_screen.dart';
@@ -12,6 +13,7 @@ import 'features/estimate/estimate_preview_screen.dart';
 import 'features/estimate/estimate_history_screen.dart';
 import 'features/settings/settings_screen.dart';
 import 'features/paywall/paywall_screen.dart';
+import 'features/team/team_screen.dart';
 
 class TradeEstimateApp extends StatelessWidget {
   const TradeEstimateApp({super.key});
@@ -65,6 +67,7 @@ class TradeEstimateApp extends StatelessWidget {
         '/history': (context) => const EstimateHistoryScreen(),
         '/settings': (context) => const SettingsScreen(),
         '/paywall': (context) => const PaywallScreen(),
+        '/team': (context) => const TeamScreen(),
       },
       onGenerateRoute: (settings) {
         // Legacy route used internally
@@ -122,13 +125,46 @@ class _AppRouter extends StatefulWidget {
   State<_AppRouter> createState() => _AppRouterState();
 }
 
-class _AppRouterState extends State<_AppRouter> {
+class _AppRouterState extends State<_AppRouter> with WidgetsBindingObserver {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     // Schedule the route check after the first frame so that Navigator is ready,
     // but we already computed the route synchronously where possible.
     WidgetsBinding.instance.addPostFrameCallback((_) => _determineInitialRoute());
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _checkSessionOnResume();
+    }
+  }
+
+  Future<void> _checkSessionOnResume() async {
+    final user = Supabase.instance.client.auth.currentUser;
+    if (user == null) return; // not signed in, nothing to check
+
+    final valid = await DeviceSessionService().isSessionValid();
+    if (!valid) {
+      if (!mounted) return;
+      await SupabaseService().signOut();
+      if (!mounted) return;
+      Navigator.of(context).pushNamedAndRemoveUntil('/auth', (_) => false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Your session has been transferred to another device.'),
+          duration: Duration(seconds: 4),
+        ),
+      );
+    }
   }
 
   Future<void> _determineInitialRoute() async {
@@ -157,6 +193,8 @@ class _AppRouterState extends State<_AppRouter> {
       // Valid session — check onboarding flag
       final onboardingDone = await SupabaseService().hasCompletedOnboarding();
       if (!mounted) return;
+      // Fire-and-forget — never block routing on this
+      DeviceSessionService().registerDevice();
       if (onboardingDone) {
         Navigator.of(context).pushReplacementNamed('/home');
       } else {

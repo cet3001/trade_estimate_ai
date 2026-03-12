@@ -17,6 +17,9 @@ class UserProfile {
   final int totalEstimatesGenerated;
   final double? defaultLaborRate;
   final String? defaultTrade;
+  final bool hasTeamAccess;
+  final String? teamId;
+  final String? teamRole;
   final DateTime createdAt;
   final DateTime updatedAt;
 
@@ -36,6 +39,9 @@ class UserProfile {
     this.totalEstimatesGenerated = 0,
     this.defaultLaborRate,
     this.defaultTrade,
+    this.hasTeamAccess = false,
+    this.teamId,
+    this.teamRole,
     required this.createdAt,
     required this.updatedAt,
   });
@@ -59,6 +65,9 @@ class UserProfile {
           (json['total_estimates_generated'] as int?) ?? 0,
       defaultLaborRate: (json['default_labor_rate'] as num?)?.toDouble(),
       defaultTrade: json['default_trade'] as String?,
+      hasTeamAccess: (json['has_team_access'] as bool?) ?? false,
+      teamId: json['team_id'] as String?,
+      teamRole: json['team_role'] as String?,
       createdAt: DateTime.parse(json['created_at'] as String),
       updatedAt: DateTime.parse(json['updated_at'] as String),
     );
@@ -80,6 +89,8 @@ class UserProfile {
       'total_estimates_generated': totalEstimatesGenerated,
       'default_labor_rate': defaultLaborRate,
       'default_trade': defaultTrade,
+      'team_id': teamId,
+      'team_role': teamRole,
       'created_at': createdAt.toIso8601String(),
       'updated_at': updatedAt.toIso8601String(),
     };
@@ -100,6 +111,9 @@ class UserProfile {
     int? totalEstimatesGenerated,
     Object? defaultLaborRate = _sentinel,
     Object? defaultTrade = _sentinel,
+    bool? hasTeamAccess,
+    Object? teamId = _sentinel,
+    Object? teamRole = _sentinel,
   }) {
     return UserProfile(
       id: id,
@@ -118,6 +132,9 @@ class UserProfile {
           totalEstimatesGenerated ?? this.totalEstimatesGenerated,
       defaultLaborRate: defaultLaborRate == _sentinel ? this.defaultLaborRate : defaultLaborRate as double?,
       defaultTrade: defaultTrade == _sentinel ? this.defaultTrade : defaultTrade as String?,
+      hasTeamAccess: hasTeamAccess ?? this.hasTeamAccess,
+      teamId: teamId == _sentinel ? this.teamId : teamId as String?,
+      teamRole: teamRole == _sentinel ? this.teamRole : teamRole as String?,
       createdAt: createdAt,
       updatedAt: DateTime.now(),
     );

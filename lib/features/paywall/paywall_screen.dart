@@ -117,6 +117,28 @@ class _PaywallScreenState extends State<PaywallScreen> {
     }
   }
 
+  Future<void> _buyTeam3() async {
+    setState(() => _errorSource = null);
+    _iap.clearError();
+    _hasPurchaseInProgress = true;
+    _activePurchaseId = 'team3';
+    final ok = await _iap.buyTeam3Subscription();
+    if (!ok && mounted) {
+      setState(() => _errorSource = 'team3');
+    }
+  }
+
+  Future<void> _buyTeam5() async {
+    setState(() => _errorSource = null);
+    _iap.clearError();
+    _hasPurchaseInProgress = true;
+    _activePurchaseId = 'team5';
+    final ok = await _iap.buyTeam5Subscription();
+    if (!ok && mounted) {
+      setState(() => _errorSource = 'team5');
+    }
+  }
+
   Future<void> _buyCredits5() async {
     setState(() => _errorSource = null);
     _iap.clearError();
@@ -236,6 +258,27 @@ class _PaywallScreenState extends State<PaywallScreen> {
                 _buildSubscriptionCard(),
                 const SizedBox(height: AppSpacing.xxl),
 
+                // -- Team plans section
+                Center(
+                  child: Text(
+                    'TEAM PLANS',
+                    style: AppTextStyles.label.copyWith(
+                      color: AppColors.accent,
+                      letterSpacing: 1.2,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.lg),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(child: _buildTeam3Card()),
+                    const SizedBox(width: AppSpacing.sm),
+                    Expanded(child: _buildTeam5Card()),
+                  ],
+                ),
+                const SizedBox(height: AppSpacing.xxl),
+
                 // -- OR divider
                 Center(
                   child: Text(
@@ -347,6 +390,120 @@ class _PaywallScreenState extends State<PaywallScreen> {
           ),
 
           // Inline error
+          if (error != null) ...[
+            const SizedBox(height: AppSpacing.sm),
+            _buildInlineError(error),
+          ],
+        ],
+      ),
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // Team 3-seat card
+  // ---------------------------------------------------------------------------
+
+  Widget _buildTeam3Card() {
+    final price = _price(IapService.kSubscriptionTeam3, r'$69.99');
+    final error = _errorSource == 'team3' ? _iap.lastError : null;
+
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.md),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(AppSpacing.md),
+        border: Border.all(color: AppColors.accent.withValues(alpha: 0.5)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('3-Seat Team', style: AppTextStyles.heading2),
+          const SizedBox(height: AppSpacing.xs),
+          Text(
+            '$price / mo',
+            style: AppTextStyles.body.copyWith(color: AppColors.accent),
+          ),
+          const SizedBox(height: AppSpacing.xs),
+          Text(
+            '3 users,\nunlimited estimates',
+            style: AppTextStyles.caption,
+          ),
+          const SizedBox(height: AppSpacing.md),
+          SizedBox(
+            width: double.infinity,
+            height: AppSpacing.buttonHeight,
+            child: ElevatedButton(
+              onPressed: (_iap.purchasePending || _restoring) ? null : _buyTeam3,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.accent,
+                foregroundColor: AppColors.textPrimary,
+                disabledBackgroundColor:
+                    AppColors.accent.withValues(alpha: 0.4),
+                elevation: 0,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(AppSpacing.md),
+                ),
+              ),
+              child: Text('Subscribe', style: AppTextStyles.body),
+            ),
+          ),
+          if (error != null) ...[
+            const SizedBox(height: AppSpacing.sm),
+            _buildInlineError(error),
+          ],
+        ],
+      ),
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // Team 5-seat card
+  // ---------------------------------------------------------------------------
+
+  Widget _buildTeam5Card() {
+    final price = _price(IapService.kSubscriptionTeam5, r'$99.99');
+    final error = _errorSource == 'team5' ? _iap.lastError : null;
+
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.md),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(AppSpacing.md),
+        border: Border.all(color: AppColors.accent.withValues(alpha: 0.5)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('5-Seat Team', style: AppTextStyles.heading2),
+          const SizedBox(height: AppSpacing.xs),
+          Text(
+            '$price / mo',
+            style: AppTextStyles.body.copyWith(color: AppColors.accent),
+          ),
+          const SizedBox(height: AppSpacing.xs),
+          Text(
+            '5 users,\nunlimited estimates',
+            style: AppTextStyles.caption,
+          ),
+          const SizedBox(height: AppSpacing.md),
+          SizedBox(
+            width: double.infinity,
+            height: AppSpacing.buttonHeight,
+            child: ElevatedButton(
+              onPressed: (_iap.purchasePending || _restoring) ? null : _buyTeam5,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.accent,
+                foregroundColor: AppColors.textPrimary,
+                disabledBackgroundColor:
+                    AppColors.accent.withValues(alpha: 0.4),
+                elevation: 0,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(AppSpacing.md),
+                ),
+              ),
+              child: Text('Subscribe', style: AppTextStyles.body),
+            ),
+          ),
           if (error != null) ...[
             const SizedBox(height: AppSpacing.sm),
             _buildInlineError(error),
