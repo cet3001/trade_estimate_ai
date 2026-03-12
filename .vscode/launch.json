@@ -1,0 +1,14 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Trade Estimate AI (dev)",
+      "request": "launch",
+      "type": "dart",
+      "args": [
+        "--dart-define=SUPABASE_URL=https://xdiyiojyzyugutgnwkui.supabase.co",
+        "--dart-define=SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhkaXlpb2p5enl1Z3V0Z253a3VpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyNTQyODMsImV4cCI6MjA4ODgzMDI4M30.yHaYbW-cjIxf8LLwjAACYrCVCRmZhdymvu5JPKbTjck"
+      ]
+    }
+  ]
+}
