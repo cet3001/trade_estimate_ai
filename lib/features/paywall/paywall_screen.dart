@@ -82,22 +82,27 @@ class _PaywallScreenState extends State<PaywallScreen> {
     if (_dismissing) return;
     _dismissing = true;
 
-    // Fetch fresh entitlements from Supabase.
-    final profile = await _service.getProfile();
-    if (!mounted) {
-      _dismissing = false;
-      return;
-    }
-    if (profile == null) {
-      _dismissing = false;
-      return;
-    }
+    try {
+      // Fetch fresh entitlements from Supabase.
+      final profile = await _service.getProfile();
+      if (!mounted) {
+        _dismissing = false;
+        return;
+      }
+      if (profile == null) {
+        _dismissing = false;
+        return;
+      }
 
-    final entitlements = Entitlements.fromUserProfile(profile);
-    if (entitlements.canGenerateEstimate) {
-      widget.onSuccess?.call();
-      Navigator.of(context).pop();
-    } else {
+      final entitlements = Entitlements.fromUserProfile(profile);
+      if (entitlements.canGenerateEstimate) {
+        widget.onSuccess?.call();
+        Navigator.of(context).pop();
+      } else {
+        _dismissing = false;
+      }
+    } catch (_) {
+      // Network error — reset so user can retry.
       _dismissing = false;
     }
   }

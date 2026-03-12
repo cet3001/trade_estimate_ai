@@ -7,6 +7,10 @@
         <string>Default</string>
     </array>
     <key>com.apple.developer.in-app-payments</key>
-    <array/>
+    <array>
+        <string>com.blackstonerow.tradeestimateai.subscription.monthly</string>
+        <string>com.blackstonerow.tradeestimateai.credits.5c</string>
+        <string>com.blackstonerow.tradeestimateai.credits.15</string>
+    </array>
 </dict>
 </plist>

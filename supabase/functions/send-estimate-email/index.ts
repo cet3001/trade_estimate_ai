@@ -112,7 +112,7 @@ Deno.serve(async (req) => {
       },
       body: JSON.stringify({
         from: 'estimates@tradeestimateai.com',
-        to: recipient_email,
+        to: estimate.client_email as string,
         subject: `Estimate from ${profile.company_name ?? profile.full_name}: ${estimate.job_title}`,
         html,
       }),
@@ -136,8 +136,8 @@ Deno.serve(async (req) => {
     return new Response(JSON.stringify({ success: true }), {
       headers: { 'Content-Type': 'application/json' },
     });
-  } catch (err) {
-    return new Response(JSON.stringify({ error: String(err) }), {
+  } catch {
+    return new Response(JSON.stringify({ error: 'An unexpected error occurred' }), {
       status: 500,
       headers: { 'Content-Type': 'application/json' },
     });

@@ -89,5 +89,10 @@
 	<string>Trade Estimate AI uses the camera to attach photos to your estimates.</string>
 	<key>NSUserTrackingUsageDescription</key>
 	<string>Trade Estimate AI does not track you. This permission is required by App Store policy.</string>
+	<key>NSAppTransportSecurity</key>
+	<dict>
+		<key>NSAllowsArbitraryLoads</key>
+		<false/>
+	</dict>
 </dict>
 </plist>

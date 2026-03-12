@@ -75,7 +75,7 @@ class _EstimateHistoryScreenState extends State<EstimateHistoryScreen> {
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _loadError = e.toString();
+        _loadError = 'Failed to load estimates. Please try again.';
         _isLoading = false;
       });
     }
@@ -513,6 +513,32 @@ class _EstimateHistoryScreenState extends State<EstimateHistoryScreen> {
                     style: AppTextStyles.body.copyWith(
                       fontWeight: FontWeight.w600,
                       color: AppColors.textPrimary,
+                    ),
+                  ),
+                ),
+              ),
+            ] else ...[
+              const SizedBox(height: AppSpacing.xl),
+              SizedBox(
+                width: double.infinity,
+                height: AppSpacing.buttonHeight,
+                child: OutlinedButton(
+                  onPressed: () => setState(() {
+                    _tradeFilter = null;
+                    _statusFilter = null;
+                    _rebuildFilteredCache();
+                  }),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: AppColors.textSecondary,
+                    side: const BorderSide(color: AppColors.borderDefault),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(AppSpacing.md),
+                    ),
+                  ),
+                  child: Text(
+                    'Clear Filters',
+                    style: AppTextStyles.body.copyWith(
+                      color: AppColors.textSecondary,
                     ),
                   ),
                 ),

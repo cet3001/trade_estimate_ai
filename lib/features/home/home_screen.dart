@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_spacing.dart';
@@ -57,7 +58,7 @@ class _HomeScreenState extends State<HomeScreen> {
         _loading = false;
       });
     } catch (e) {
-      debugPrint('HomeScreen._loadData error: $e');
+      if (kDebugMode) debugPrint('HomeScreen._loadData error: $e');
       if (!mounted) return;
       setState(() {
         _error = 'Something went wrong. Please check your connection and try again.';
@@ -352,7 +353,7 @@ class _HomeScreenState extends State<HomeScreen> {
       // Nested inside the outer ListView — disable scrolling so it renders
       // as a static list inside the scroll view.
       physics: const NeverScrollableScrollPhysics(),
-      shrinkWrap: true, // TODO: add server-side pagination when estimate counts grow
+      shrinkWrap: true,
       itemCount: _estimates.length,
       separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.sm),
       itemBuilder: (context, index) {

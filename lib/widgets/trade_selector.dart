@@ -26,10 +26,10 @@ class TradeSelectorTile extends StatelessWidget {
           color: isSelected
               ? AppColors.positive.withValues(alpha: 0.1)
               : AppColors.surface,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(AppSpacing.tradeTileBorderRadius),
           border: Border.all(
             color: isSelected ? AppColors.borderActive : AppColors.borderDefault,
-            width: isSelected ? 2 : 1,
+            width: isSelected ? AppSpacing.focusedBorderWidth : AppSpacing.tileBorderWidth,
           ),
         ),
         child: Stack(
@@ -57,8 +57,8 @@ class TradeSelectorTile extends StatelessWidget {
                 top: AppSpacing.sm,
                 right: AppSpacing.sm,
                 child: Container(
-                  width: 22,
-                  height: 22,
+                  width: AppSpacing.tradeTileCheckSize,
+                  height: AppSpacing.tradeTileCheckSize,
                   decoration: const BoxDecoration(
                     color: AppColors.positive,
                     shape: BoxShape.circle,
@@ -66,7 +66,7 @@ class TradeSelectorTile extends StatelessWidget {
                   child: const Icon(
                     Icons.check,
                     color: AppColors.textPrimary,
-                    size: 14,
+                    size: AppSpacing.tradeTileCheckIconSize,
                   ),
                 ),
               ),

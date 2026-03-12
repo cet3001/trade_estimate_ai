@@ -295,7 +295,7 @@ class _AuthScreenState extends State<AuthScreen> {
                           foregroundColor: AppColors.textPrimary,
                           side: const BorderSide(color: AppColors.borderDefault),
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
+                            borderRadius: BorderRadius.circular(AppSpacing.md),
                           ),
                         ),
                         child: const Text('Done'),
@@ -367,7 +367,7 @@ class _AuthScreenState extends State<AuthScreen> {
                           backgroundColor: AppColors.positive,
                           foregroundColor: AppColors.background,
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
+                            borderRadius: BorderRadius.circular(AppSpacing.md),
                           ),
                           elevation: 0,
                         ),
@@ -384,9 +384,8 @@ class _AuthScreenState extends State<AuthScreen> {
                               )
                             : Text(
                                 'Send Reset Email',
-                                style: AppTextStyles.body.copyWith(
+                                style: AppTextStyles.bodyMedium.copyWith(
                                   color: AppColors.background,
-                                  fontWeight: FontWeight.w600,
                                 ),
                               ),
                       ),
@@ -457,37 +456,16 @@ class _AuthScreenState extends State<AuthScreen> {
                 children: [
                   const SizedBox(height: AppSpacing.huge),
 
-                  // ── Logo / Icon ──────────────────────────────────────────
-                  Container(
-                    width: 80,
-                    height: 80,
-                    decoration: BoxDecoration(
-                      color: AppColors.surface,
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(
-                        color: AppColors.borderDefault,
-                        width: 1,
-                      ),
-                    ),
-                    child: const Center(
-                      child: Icon(
-                        Icons.construction_rounded,
-                        size: 40,
-                        color: AppColors.positive,
-                      ),
+                  // ── Logo ─────────────────────────────────────────────────
+                  ClipOval(
+                    child: Image.asset(
+                      'assets/images/logo.png',
+                      width: 140,
+                      height: 140,
                     ),
                   ),
 
-                  const SizedBox(height: AppSpacing.xxxl),
-
-                  // ── App name ─────────────────────────────────────────────
-                  Text(
-                    'Trade Estimate AI',
-                    style: AppTextStyles.heading1,
-                    textAlign: TextAlign.center,
-                  ),
-
-                  const SizedBox(height: AppSpacing.md),
+                  const SizedBox(height: AppSpacing.lg),
 
                   // ── Tagline ──────────────────────────────────────────────
                   Text(
@@ -515,9 +493,8 @@ class _AuthScreenState extends State<AuthScreen> {
                       color: AppColors.appleSignInForeground,
                     ),
                     label: 'Continue with Apple',
-                    labelStyle: AppTextStyles.body.copyWith(
+                    labelStyle: AppTextStyles.bodyMedium.copyWith(
                       color: AppColors.appleSignInForeground,
-                      fontWeight: FontWeight.w600,
                     ),
                     loaderColor: AppColors.appleSignInForeground,
                   ),
@@ -546,7 +523,7 @@ class _AuthScreenState extends State<AuthScreen> {
                             width: 1.5,
                           ),
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
+                            borderRadius: BorderRadius.circular(AppSpacing.md),
                           ),
                         ),
                         child: Row(
@@ -560,9 +537,7 @@ class _AuthScreenState extends State<AuthScreen> {
                             const SizedBox(width: AppSpacing.sm),
                             Text(
                               'Continue with Email',
-                              style: AppTextStyles.body.copyWith(
-                                fontWeight: FontWeight.w600,
-                              ),
+                              style: AppTextStyles.bodyMedium,
                             ),
                           ],
                         ),
@@ -690,7 +665,7 @@ class _AuthButton extends StatelessWidget {
             disabledBackgroundColor: backgroundColor.withAlpha(137),
             elevation: 0,
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(AppSpacing.md),
             ),
           ),
           child: isLoading
@@ -904,7 +879,7 @@ class _EmailForm extends StatelessWidget {
               disabledBackgroundColor: AppColors.positive.withAlpha(100),
               elevation: 0,
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(AppSpacing.md),
               ),
             ),
             child: isLoading
@@ -920,9 +895,8 @@ class _EmailForm extends StatelessWidget {
                   )
                 : Text(
                     isSignUpMode ? 'Create Account' : 'Sign In',
-                    style: AppTextStyles.body.copyWith(
+                    style: AppTextStyles.bodyBold.copyWith(
                       color: AppColors.background,
-                      fontWeight: FontWeight.w700,
                     ),
                   ),
           ),
@@ -958,7 +932,7 @@ class _ModeTab extends StatelessWidget {
           duration: const Duration(milliseconds: 200),
           margin: const EdgeInsets.all(3),
           decoration: BoxDecoration(
-            color: isSelected ? AppColors.surfaceElevated : Colors.transparent,
+            color: isSelected ? AppColors.surfaceElevated : AppColors.transparent,
             borderRadius: BorderRadius.circular(8),
           ),
           alignment: Alignment.center,

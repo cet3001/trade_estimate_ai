@@ -124,7 +124,11 @@ class SupabaseService {
 
     final response = await client
         .from('estimates')
-        .select()
+        .select('id, user_id, trade, client_name, client_email, job_title, '
+            'job_description, scope_of_work, materials, job_location, '
+            'scope_details, notes, labor_hours, labor_rate, materials_cost, '
+            'additional_fees, total_estimate, pdf_url, status, sent_at, '
+            'created_at')
         .eq('user_id', userId)
         .order('created_at', ascending: false);
 

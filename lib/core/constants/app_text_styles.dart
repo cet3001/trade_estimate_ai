@@ -31,9 +31,24 @@ class AppTextStyles {
     fontWeight: FontWeight.w400,
     color: AppColors.textPrimary,
   );
+  static final bodyMedium = GoogleFonts.inter(
+    fontSize: 15,
+    fontWeight: FontWeight.w600,
+    color: AppColors.textPrimary,
+  );
+  static final bodyBold = GoogleFonts.inter(
+    fontSize: 15,
+    fontWeight: FontWeight.w700,
+    color: AppColors.textPrimary,
+  );
   static final caption = GoogleFonts.inter(
     fontSize: 12,
     fontWeight: FontWeight.w400,
+    color: AppColors.textSecondary,
+  );
+  static final captionMedium = GoogleFonts.inter(
+    fontSize: 12,
+    fontWeight: FontWeight.w600,
     color: AppColors.textSecondary,
   );
   static final label = GoogleFonts.inter(

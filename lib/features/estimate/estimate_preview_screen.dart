@@ -93,7 +93,7 @@ class _EstimatePreviewScreenState extends State<EstimatePreviewScreen> {
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _loadError = e.toString();
+        _loadError = 'Failed to load estimate. Please try again.';
         _isLoading = false;
       });
     }
@@ -616,7 +616,7 @@ class _EstimatePreviewScreenState extends State<EstimatePreviewScreen> {
           children: [
             Text(
               'TOTAL',
-              style: AppTextStyles.body.copyWith(fontWeight: FontWeight.w700),
+              style: AppTextStyles.bodyBold,
             ),
             const Spacer(),
             Text(

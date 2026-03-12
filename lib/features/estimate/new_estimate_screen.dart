@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
@@ -149,11 +150,12 @@ class _NewEstimateScreenState extends State<NewEstimateScreen> {
     } catch (e) {
       // Network or database error: log and continue without profile data.
       // The UI remains usable; profile-dependent fields simply won't be pre-filled.
-      debugPrint('[NewEstimateScreen] _loadProfile error: $e');
+      // Do not reset _entitlements here — a re-fetch failure (e.g. after paywall)
+      // must not wipe entitlements the user legitimately earned.
+      if (kDebugMode) debugPrint('[NewEstimateScreen] _loadProfile error: $e');
       if (!mounted) return;
       setState(() {
         _profile = null;
-        _entitlements = Entitlements.empty;
       });
     }
   }
@@ -241,7 +243,7 @@ class _NewEstimateScreenState extends State<NewEstimateScreen> {
       } catch (e) {
         // Saving the default labor rate preference is non-fatal.
         // Log the error and continue navigating to the next step.
-        debugPrint('[NewEstimateScreen] _onStep3Next updateProfile error: $e');
+        if (kDebugMode) debugPrint('[NewEstimateScreen] _onStep3Next updateProfile error: $e');
       }
     }
     if (!mounted) return;
@@ -271,7 +273,14 @@ class _NewEstimateScreenState extends State<NewEstimateScreen> {
     });
 
     try {
-      final trade = _selectedTrade ?? TradeType.plumbing;
+      final trade = _selectedTrade;
+      if (trade == null) {
+        setState(() {
+          _isGenerating = false;
+          _generationError = 'Please select a trade before generating.';
+        });
+        return;
+      }
 
       final body = {
         'trade': trade.value,

@@ -90,9 +90,8 @@ class EstimateCard extends StatelessWidget {
       ),
       child: Text(
         _statusLabel,
-        style: AppTextStyles.caption.copyWith(
+        style: AppTextStyles.captionMedium.copyWith(
           color: _statusColor,
-          fontWeight: FontWeight.w600,
         ),
       ),
     );

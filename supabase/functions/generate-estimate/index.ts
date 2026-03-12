@@ -91,6 +91,17 @@ Deno.serve(async (req) => {
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
+
+    // Input length limits
+    const MAX_JOB_TITLE = 200;
+    const MAX_JOB_DESCRIPTION = 5000;
+    const MAX_NOTES = 2000;
+    if (jobTitle.length > MAX_JOB_TITLE || jobDescription.length > MAX_JOB_DESCRIPTION || (notes && notes.length > MAX_NOTES)) {
+      return new Response(
+        JSON.stringify({ error: 'Input exceeds maximum allowed length' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
     if (typeof laborHours !== 'number' || typeof laborRate !== 'number' || typeof materialsCost !== 'number') {
       return new Response(
         JSON.stringify({ error: 'laborHours, laborRate, and materialsCost must be numbers' }),
@@ -167,7 +178,9 @@ Deno.serve(async (req) => {
     }
 
     const anthropic = new Anthropic({ apiKey: anthropicKey });
-    const message = await anthropic.messages.create({
+    let message;
+    try {
+    message = await anthropic.messages.create({
       model: 'claude-sonnet-4-20250514',
       max_tokens: 1000,
       system: `${tradeContext[trade] || tradeContext.construction}
@@ -194,6 +207,25 @@ ${scopeDetails ? `<scope_details>${escapeXml(JSON.stringify(scopeDetails, null, 
 ${notes ? `<notes>${escapeXml(notes)}</notes>` : ''}`
       }],
     });
+
+    } catch (aiError: unknown) {
+      // Refund credit on Anthropic failure (429 rate limit or other)
+      if (!hasSubscription && !isAdmin) {
+        try {
+          await adminClient.rpc('increment_credits', { user_id: user.id, amount: 1 });
+        } catch (refundErr) {
+          console.error('Credit refund failed:', refundErr);
+        }
+      }
+      const status = (aiError as { status?: number })?.status;
+      if (status === 429) {
+        return new Response(
+          JSON.stringify({ error: 'AI service is temporarily busy. Please try again in a moment.' }),
+          { status: 503, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+      throw aiError;
+    }
 
     const estimateBody =
       message.content[0].type === 'text' ? message.content[0].text : '';
@@ -224,7 +256,7 @@ ${notes ? `<notes>${escapeXml(notes)}</notes>` : ''}`
     if (insertError) {
       console.error('Insert error:', insertError);
       return new Response(
-        JSON.stringify({ error: 'Failed to save estimate', details: insertError.message }),
+        JSON.stringify({ error: 'Failed to save estimate' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -241,7 +273,7 @@ ${notes ? `<notes>${escapeXml(notes)}</notes>` : ''}`
   } catch (error) {
     console.error('Unexpected error:', error);
     return new Response(
-      JSON.stringify({ error: 'Internal server error', details: String(error) }),
+      JSON.stringify({ error: 'Internal server error' }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
