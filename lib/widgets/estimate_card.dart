@@ -109,59 +109,73 @@ class EstimateCard extends StatelessWidget {
       clipBehavior: Clip.antiAlias,
       child: InkWell(
         onTap: onTap,
-        child: Container(
-          width: AppSpacing.estimateCardCompactWidth,
-          decoration: BoxDecoration(
-            color: AppColors.surface,
-            borderRadius: BorderRadius.circular(AppSpacing.cardBorderRadius),
-            border: Border(
-              left: BorderSide(color: _tradeColor, width: AppSpacing.cardAccentBorderWidth),
-              top: const BorderSide(color: AppColors.divider),
-              right: const BorderSide(color: AppColors.divider),
-              bottom: const BorderSide(color: AppColors.divider),
-            ),
-          ),
-          child: Padding(
-            padding: const EdgeInsets.all(AppSpacing.md),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
+        child: Stack(
+          children: [
+            Container(
+              width: AppSpacing.estimateCardCompactWidth,
+              decoration: BoxDecoration(
+                color: AppColors.surface,
+                borderRadius: BorderRadius.circular(AppSpacing.cardBorderRadius),
+                border: Border.all(color: AppColors.divider),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(AppSpacing.md),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Icon(_tradeIcon, color: _tradeColor, size: AppSpacing.xl),
-                    const SizedBox(width: AppSpacing.xs),
-                    Expanded(
-                      child: Text(
-                        estimate.trade.displayName,
-                        style: AppTextStyles.label.copyWith(color: _tradeColor),
-                        overflow: TextOverflow.ellipsis,
-                      ),
+                    Row(
+                      children: [
+                        Icon(_tradeIcon, color: _tradeColor, size: AppSpacing.xl),
+                        const SizedBox(width: AppSpacing.xs),
+                        Expanded(
+                          child: Text(
+                            estimate.trade.displayName,
+                            style: AppTextStyles.label.copyWith(color: _tradeColor),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: AppSpacing.sm),
+                    Text(
+                      estimate.clientName ?? 'Unknown',
+                      style: AppTextStyles.heading2,
+                      overflow: TextOverflow.ellipsis,
+                      maxLines: 1,
+                    ),
+                    const SizedBox(height: AppSpacing.xs),
+                    Text(
+                      Formatters.currency(estimate.totalEstimate),
+                      style: AppTextStyles.totalAmount,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: AppSpacing.sm),
+                    _statusBadge(),
+                    const SizedBox(height: AppSpacing.xs),
+                    Text(
+                      Formatters.cardDate(estimate.createdAt),
+                      style: AppTextStyles.caption,
                     ),
                   ],
                 ),
-                const SizedBox(height: AppSpacing.sm),
-                Text(
-                  estimate.clientName ?? 'Unknown',
-                  style: AppTextStyles.heading2,
-                  overflow: TextOverflow.ellipsis,
-                  maxLines: 1,
-                ),
-                const SizedBox(height: AppSpacing.xs),
-                Text(
-                  Formatters.currency(estimate.totalEstimate),
-                  style: AppTextStyles.totalAmount,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: AppSpacing.sm),
-                _statusBadge(),
-                const SizedBox(height: AppSpacing.xs),
-                Text(
-                  Formatters.cardDate(estimate.createdAt),
-                  style: AppTextStyles.caption,
-                ),
-              ],
+              ),
             ),
-          ),
+            Positioned(
+              left: 0,
+              top: 0,
+              bottom: 0,
+              child: Container(
+                width: AppSpacing.cardAccentBorderWidth,
+                decoration: BoxDecoration(
+                  color: _tradeColor,
+                  borderRadius: BorderRadius.only(
+                    topLeft: Radius.circular(AppSpacing.cardBorderRadius),
+                    bottomLeft: Radius.circular(AppSpacing.cardBorderRadius),
+                  ),
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -178,78 +192,92 @@ class EstimateCard extends StatelessWidget {
       clipBehavior: Clip.antiAlias,
       child: InkWell(
         onTap: onTap,
-        child: Container(
-          decoration: BoxDecoration(
-            color: AppColors.surface,
-            borderRadius: BorderRadius.circular(AppSpacing.cardBorderRadius),
-            border: Border(
-              left: BorderSide(color: _tradeColor, width: AppSpacing.cardAccentBorderWidth),
-              top: const BorderSide(color: AppColors.divider),
-              right: const BorderSide(color: AppColors.divider),
-              bottom: const BorderSide(color: AppColors.divider),
-            ),
-          ),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(
-              horizontal: AppSpacing.lg,
-              vertical: AppSpacing.md,
-            ),
-            child: Row(
-              children: [
-                // Trade icon
-                Container(
-                  width: AppSpacing.xxxl + AppSpacing.sm,
-                  height: AppSpacing.xxxl + AppSpacing.sm,
-                  decoration: BoxDecoration(
-                    color: _tradeColor.withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(AppSpacing.sm),
-                  ),
-                  child: Icon(_tradeIcon, color: _tradeColor, size: AppSpacing.xl),
+        child: Stack(
+          children: [
+            Container(
+              decoration: BoxDecoration(
+                color: AppColors.surface,
+                borderRadius: BorderRadius.circular(AppSpacing.cardBorderRadius),
+                border: Border.all(color: AppColors.divider),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.lg,
+                  vertical: AppSpacing.md,
                 ),
-                const SizedBox(width: AppSpacing.md),
-                // Client + job title
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        estimate.clientName ?? 'Unknown',
-                        style: AppTextStyles.heading2,
-                        overflow: TextOverflow.ellipsis,
+                child: Row(
+                  children: [
+                    // Trade icon
+                    Container(
+                      width: AppSpacing.xxxl + AppSpacing.sm,
+                      height: AppSpacing.xxxl + AppSpacing.sm,
+                      decoration: BoxDecoration(
+                        color: _tradeColor.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(AppSpacing.sm),
                       ),
-                      if (estimate.jobTitle != null &&
-                          estimate.jobTitle!.isNotEmpty) ...[
+                      child: Icon(_tradeIcon, color: _tradeColor, size: AppSpacing.xl),
+                    ),
+                    const SizedBox(width: AppSpacing.md),
+                    // Client + job title
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            estimate.clientName ?? 'Unknown',
+                            style: AppTextStyles.heading2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          if (estimate.jobTitle != null &&
+                              estimate.jobTitle!.isNotEmpty) ...[
+                            const SizedBox(height: AppSpacing.xs),
+                            Text(
+                              estimate.jobTitle!,
+                              style: AppTextStyles.caption,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: AppSpacing.md),
+                    // Total + status + date stacked
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        Text(
+                          Formatters.currency(estimate.totalEstimate),
+                          style: AppTextStyles.totalAmount,
+                        ),
+                        const SizedBox(height: AppSpacing.xs),
+                        _statusBadge(),
                         const SizedBox(height: AppSpacing.xs),
                         Text(
-                          estimate.jobTitle!,
+                          Formatters.cardDate(estimate.createdAt),
                           style: AppTextStyles.caption,
-                          overflow: TextOverflow.ellipsis,
                         ),
                       ],
-                    ],
-                  ),
-                ),
-                const SizedBox(width: AppSpacing.md),
-                // Total + status + date stacked
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    Text(
-                      Formatters.currency(estimate.totalEstimate),
-                      style: AppTextStyles.totalAmount,
-                    ),
-                    const SizedBox(height: AppSpacing.xs),
-                    _statusBadge(),
-                    const SizedBox(height: AppSpacing.xs),
-                    Text(
-                      Formatters.cardDate(estimate.createdAt),
-                      style: AppTextStyles.caption,
                     ),
                   ],
                 ),
-              ],
+              ),
             ),
-          ),
+            Positioned(
+              left: 0,
+              top: 0,
+              bottom: 0,
+              child: Container(
+                width: AppSpacing.cardAccentBorderWidth,
+                decoration: BoxDecoration(
+                  color: _tradeColor,
+                  borderRadius: BorderRadius.only(
+                    topLeft: Radius.circular(AppSpacing.cardBorderRadius),
+                    bottomLeft: Radius.circular(AppSpacing.cardBorderRadius),
+                  ),
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );
