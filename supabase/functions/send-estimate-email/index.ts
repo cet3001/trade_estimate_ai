@@ -153,7 +153,7 @@ function buildEmailHtml(
     (profile.company_name ?? profile.full_name ?? 'Your Contractor') as string
   );
   const phone = profile.phone as string | null;
-  const email = profile.email as string;
+  const email = profile.email as string | null;
   const license = profile.license_number as string | null;
   const emailSignature = (profile.email_signature as string | null)?.trim() || null;
 
@@ -187,7 +187,7 @@ function buildEmailHtml(
         <!-- Header -->
         <tr><td style="background-color:#0F0F0F;padding:24px 32px;">
           <p style="margin:0;font-size:20px;font-weight:700;color:#ffffff;">${businessName}</p>
-          <p style="margin:4px 0 0;font-size:13px;color:#8E8E93;">${phone ? `${escapeHtml(phone)}  |  ` : ''}${escapeHtml(email)}${license ? `  |  License #${escapeHtml(license)}` : ''}</p>
+          <p style="margin:4px 0 0;font-size:13px;color:#8E8E93;">${phone ? `${escapeHtml(phone)}  |  ` : ''}${email ? escapeHtml(email) : ''}${license ? `  |  License #${escapeHtml(license)}` : ''}</p>
         </td></tr>
 
         <!-- Prepared For -->
@@ -210,7 +210,7 @@ function buildEmailHtml(
               <td colspan="2" style="font-size:11px;font-weight:600;color:#8E8E93;letter-spacing:0.8px;text-transform:uppercase;padding-top:16px;">Cost Summary</td>
             </tr>
             <tr>
-              <td style="font-size:14px;color:#1C1C1E;">Labor (${estimate.labor_hours}h &times; $${estimate.labor_rate}/hr)</td>
+              <td style="font-size:14px;color:#1C1C1E;">Labor (${(estimate.labor_hours as number).toFixed(1)}h &times; $${(estimate.labor_rate as number).toFixed(2)}/hr)</td>
               <td align="right" style="font-size:14px;color:#1C1C1E;font-family:monospace;">$${laborTotal}</td>
             </tr>
             <tr>
