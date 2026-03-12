@@ -1,6 +1,9 @@
 import '../constants/trade_templates.dart';
 
 class Estimate {
+  // Sentinel used by copyWith to distinguish "omitted" from explicit null.
+  static const Object _sentinel = Object();
+
   final String id;
   final String userId;
   final TradeType trade;
@@ -123,10 +126,10 @@ class Estimate {
     double? materialsCost,
     double? additionalFees,
     double? totalEstimate,
-    String? aiGeneratedBody,
-    String? pdfUrl,
+    Object? aiGeneratedBody = _sentinel,
+    Object? pdfUrl = _sentinel,
     String? status,
-    DateTime? sentAt,
+    Object? sentAt = _sentinel,
     DateTime? createdAt,
   }) {
     return Estimate(
@@ -147,10 +150,13 @@ class Estimate {
       materialsCost: materialsCost ?? this.materialsCost,
       additionalFees: additionalFees ?? this.additionalFees,
       totalEstimate: totalEstimate ?? this.totalEstimate,
-      aiGeneratedBody: aiGeneratedBody ?? this.aiGeneratedBody,
-      pdfUrl: pdfUrl ?? this.pdfUrl,
+      aiGeneratedBody: identical(aiGeneratedBody, _sentinel)
+          ? this.aiGeneratedBody
+          : aiGeneratedBody as String?,
+      pdfUrl: identical(pdfUrl, _sentinel) ? this.pdfUrl : pdfUrl as String?,
       status: status ?? this.status,
-      sentAt: sentAt ?? this.sentAt,
+      sentAt:
+          identical(sentAt, _sentinel) ? this.sentAt : sentAt as DateTime?,
       createdAt: createdAt ?? this.createdAt,
     );
   }

@@ -166,9 +166,12 @@ class IapService extends ChangeNotifier {
       }
 
       if (shouldComplete && purchase.pendingCompletePurchase) {
-        await _iap.completePurchase(purchase);
-        _purchasePending = false;
-        notifyListeners();
+        try {
+          await _iap.completePurchase(purchase);
+        } finally {
+          _purchasePending = false;
+          notifyListeners();
+        }
       }
     }
   }

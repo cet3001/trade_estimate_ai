@@ -58,10 +58,11 @@ class _NewEstimateScreenState extends State<NewEstimateScreen> {
   bool _saveLaborRate = false;
 
   // -- Live cost summary state (updated by step-3 field changes)
-  double _liveLaborHours = 0;
-  double _liveLaborRate = 0;
-  double _liveMaterialsCost = 0;
-  double _liveAdditionalFees = 0;
+  // ValueNotifiers so only _buildLiveCostSummary() rebuilds on keystroke.
+  final _liveLaborHours = ValueNotifier<double>(0);
+  final _liveLaborRate = ValueNotifier<double>(0);
+  final _liveMaterialsCost = ValueNotifier<double>(0);
+  final _liveAdditionalFees = ValueNotifier<double>(0);
 
   // -- Profile / entitlements
   UserProfile? _profile;
@@ -100,10 +101,10 @@ class _NewEstimateScreenState extends State<NewEstimateScreen> {
     _materialsCost = prefill.materialsCost ?? 0;
     _additionalFees = prefill.additionalFees ?? 0;
     _notes = prefill.notes ?? '';
-    _liveLaborHours = prefill.laborHours ?? 0;
-    _liveLaborRate = prefill.laborRate ?? 0;
-    _liveMaterialsCost = prefill.materialsCost ?? 0;
-    _liveAdditionalFees = prefill.additionalFees ?? 0;
+    _liveLaborHours.value = prefill.laborHours ?? 0;
+    _liveLaborRate.value = prefill.laborRate ?? 0;
+    _liveMaterialsCost.value = prefill.materialsCost ?? 0;
+    _liveAdditionalFees.value = prefill.additionalFees ?? 0;
     // Skip to step 1 (job details) so the user can review and edit.
     _step = 1;
   }
@@ -111,6 +112,10 @@ class _NewEstimateScreenState extends State<NewEstimateScreen> {
   @override
   void dispose() {
     _pageController.dispose();
+    _liveLaborHours.dispose();
+    _liveLaborRate.dispose();
+    _liveMaterialsCost.dispose();
+    _liveAdditionalFees.dispose();
     super.dispose();
   }
 
@@ -125,7 +130,7 @@ class _NewEstimateScreenState extends State<NewEstimateScreen> {
             : Entitlements.empty;
         // Pre-seed live rate with saved default only when no prefill was provided
         if (widget.prefillEstimate == null && profile?.defaultLaborRate != null) {
-          _liveLaborRate = profile!.defaultLaborRate!;
+          _liveLaborRate.value = profile!.defaultLaborRate!;
           _laborRate = profile.defaultLaborRate!;
         }
         // Pre-seed trade selection from profile default only when no prefill was provided
@@ -251,7 +256,7 @@ class _NewEstimateScreenState extends State<NewEstimateScreen> {
     if (!_entitlements.canGenerateEstimate) {
       await Navigator.of(context).push(
         MaterialPageRoute<void>(
-          builder: (_) => PaywallScreen(onSuccess: _loadProfile),
+          builder: (_) => const PaywallScreen(),
         ),
       );
       if (!mounted) return;
@@ -347,7 +352,9 @@ class _NewEstimateScreenState extends State<NewEstimateScreen> {
   // ---------------------------------------------------------------------------
 
   double get _liveTotal =>
-      (_liveLaborHours * _liveLaborRate) + _liveMaterialsCost + _liveAdditionalFees;
+      (_liveLaborHours.value * _liveLaborRate.value) +
+      _liveMaterialsCost.value +
+      _liveAdditionalFees.value;
 
   double get _confirmTotal =>
       (_laborHours * _laborRate) + _materialsCost + _additionalFees;
@@ -804,9 +811,9 @@ class _NewEstimateScreenState extends State<NewEstimateScreen> {
             initialValue: _laborHours > 0 ? _laborHours.toString() : null,
             decoration: _fieldDecoration('Labor Hours', hint: 'e.g. 20'),
             keyboardType: const TextInputType.numberWithOptions(decimal: true),
-            onChanged: (val) => setState(() {
-              _liveLaborHours = double.tryParse(val ?? '') ?? 0;
-            }),
+            onChanged: (val) {
+              _liveLaborHours.value = double.tryParse(val ?? '') ?? 0;
+            },
             validator: FormBuilderValidators.compose([
               FormBuilderValidators.required(errorText: 'Labor hours required'),
               FormBuilderValidators.numeric(errorText: 'Enter a number'),
@@ -822,9 +829,9 @@ class _NewEstimateScreenState extends State<NewEstimateScreen> {
                     : (_laborRate > 0 ? _laborRate.toString() : null)),
             decoration: _fieldDecoration('Labor Rate (per hour)', hint: 'e.g. 85'),
             keyboardType: const TextInputType.numberWithOptions(decimal: true),
-            onChanged: (val) => setState(() {
-              _liveLaborRate = double.tryParse(val ?? '') ?? 0;
-            }),
+            onChanged: (val) {
+              _liveLaborRate.value = double.tryParse(val ?? '') ?? 0;
+            },
             validator: FormBuilderValidators.compose([
               FormBuilderValidators.required(errorText: 'Labor rate required'),
               FormBuilderValidators.numeric(errorText: 'Enter a number'),
@@ -838,9 +845,9 @@ class _NewEstimateScreenState extends State<NewEstimateScreen> {
             initialValue: _materialsCost > 0 ? _materialsCost.toString() : null,
             decoration: _fieldDecoration('Materials Cost (\$)', hint: 'e.g. 2500'),
             keyboardType: const TextInputType.numberWithOptions(decimal: true),
-            onChanged: (val) => setState(() {
-              _liveMaterialsCost = double.tryParse(val ?? '') ?? 0;
-            }),
+            onChanged: (val) {
+              _liveMaterialsCost.value = double.tryParse(val ?? '') ?? 0;
+            },
             validator: FormBuilderValidators.compose([
               FormBuilderValidators.required(
                   errorText: 'Materials cost required'),
@@ -854,9 +861,9 @@ class _NewEstimateScreenState extends State<NewEstimateScreen> {
             decoration: _fieldDecoration('Additional Fees (\$)',
                 hint: 'Permit fees, disposal, equipment rental'),
             keyboardType: const TextInputType.numberWithOptions(decimal: true),
-            onChanged: (val) => setState(() {
-              _liveAdditionalFees = double.tryParse(val ?? '') ?? 0;
-            }),
+            onChanged: (val) {
+              _liveAdditionalFees.value = double.tryParse(val ?? '') ?? 0;
+            },
           ),
           const SizedBox(height: AppSpacing.md),
           FormBuilderTextField(
@@ -893,46 +900,59 @@ class _NewEstimateScreenState extends State<NewEstimateScreen> {
   }
 
   Widget _buildLiveCostSummary() {
-    final laborCost = _liveLaborHours * _liveLaborRate;
-    return Container(
-      padding: const EdgeInsets.all(AppSpacing.lg),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(AppSpacing.md),
-        border: Border.all(color: AppColors.divider),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text('Live Summary', style: AppTextStyles.sectionLabel),
-          const SizedBox(height: AppSpacing.md),
-          _summaryRow(
-            'Labor',
-            Formatters.currency(laborCost),
-            detail: '${_liveLaborHours.toStringAsFixed(0)} hrs × ${Formatters.currency(_liveLaborRate)}/hr',
+    return AnimatedBuilder(
+      animation: Listenable.merge([
+        _liveLaborHours,
+        _liveLaborRate,
+        _liveMaterialsCost,
+        _liveAdditionalFees,
+      ]),
+      builder: (context, _) {
+        final laborCost = _liveLaborHours.value * _liveLaborRate.value;
+        return Container(
+          padding: const EdgeInsets.all(AppSpacing.lg),
+          decoration: BoxDecoration(
+            color: AppColors.surface,
+            borderRadius: BorderRadius.circular(AppSpacing.md),
+            border: Border.all(color: AppColors.divider),
           ),
-          const SizedBox(height: AppSpacing.sm),
-          _summaryRow('Materials', Formatters.currency(_liveMaterialsCost)),
-          const SizedBox(height: AppSpacing.sm),
-          _summaryRow('Additional', Formatters.currency(_liveAdditionalFees)),
-          const SizedBox(height: AppSpacing.md),
-          Container(
-            height: AppSpacing.costSummaryDividerThickness,
-            color: AppColors.divider,
-          ),
-          const SizedBox(height: AppSpacing.md),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Total', style: AppTextStyles.heading2),
-              Text(
-                Formatters.currency(_liveTotal),
-                style: AppTextStyles.totalAmount,
+              Text('Live Summary', style: AppTextStyles.sectionLabel),
+              const SizedBox(height: AppSpacing.md),
+              _summaryRow(
+                'Labor',
+                Formatters.currency(laborCost),
+                detail:
+                    '${_liveLaborHours.value.toStringAsFixed(0)} hrs × ${Formatters.currency(_liveLaborRate.value)}/hr',
+              ),
+              const SizedBox(height: AppSpacing.sm),
+              _summaryRow(
+                  'Materials', Formatters.currency(_liveMaterialsCost.value)),
+              const SizedBox(height: AppSpacing.sm),
+              _summaryRow(
+                  'Additional', Formatters.currency(_liveAdditionalFees.value)),
+              const SizedBox(height: AppSpacing.md),
+              Container(
+                height: AppSpacing.costSummaryDividerThickness,
+                color: AppColors.divider,
+              ),
+              const SizedBox(height: AppSpacing.md),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text('Total', style: AppTextStyles.heading2),
+                  Text(
+                    Formatters.currency(_liveTotal),
+                    style: AppTextStyles.totalAmount,
+                  ),
+                ],
               ),
             ],
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 
@@ -996,15 +1016,19 @@ class _NewEstimateScreenState extends State<NewEstimateScreen> {
                 ),
               ),
               const SizedBox(width: AppSpacing.md),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(info.label, style: AppTextStyles.heading2.copyWith(color: info.color)),
-                  Text(
-                    'Claude will write a professional ${info.label} estimate\nbased on your job details.',
-                    style: AppTextStyles.caption,
-                  ),
-                ],
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(info.label,
+                        style:
+                            AppTextStyles.heading2.copyWith(color: info.color)),
+                    Text(
+                      'Claude will write a professional ${info.label} estimate\nbased on your job details.',
+                      style: AppTextStyles.caption,
+                    ),
+                  ],
+                ),
               ),
             ],
           ),

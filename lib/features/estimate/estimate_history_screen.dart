@@ -69,6 +69,7 @@ class _EstimateHistoryScreenState extends State<EstimateHistoryScreen> {
       if (!mounted) return;
       setState(() {
         _allEstimates = estimates;
+        _rebuildFilteredCache();
         _isLoading = false;
       });
     } catch (e) {
@@ -84,8 +85,12 @@ class _EstimateHistoryScreenState extends State<EstimateHistoryScreen> {
   // Filtered list
   // ---------------------------------------------------------------------------
 
-  List<Estimate> get _filteredEstimates {
-    return _allEstimates.where((e) {
+  // Cached result — rebuilt inside every setState that touches _allEstimates,
+  // _tradeFilter, or _statusFilter to avoid allocating a new List on every build().
+  List<Estimate> _filteredEstimates = [];
+
+  void _rebuildFilteredCache() {
+    _filteredEstimates = _allEstimates.where((e) {
       final tradeMatch = _tradeFilter == null || e.trade == _tradeFilter;
       final statusMatch = _statusFilter == null || e.status == _statusFilter;
       return tradeMatch && statusMatch;
@@ -349,16 +354,20 @@ class _EstimateHistoryScreenState extends State<EstimateHistoryScreen> {
           _FilterPill(
             label: 'All',
             isActive: _tradeFilter == null,
-            onTap: () => setState(() => _tradeFilter = null),
+            onTap: () => setState(() {
+              _tradeFilter = null;
+              _rebuildFilteredCache();
+            }),
           ),
           ..._tradeOptions.map((trade) => Padding(
                 padding: const EdgeInsets.only(left: AppSpacing.sm),
                 child: _FilterPill(
                   label: trade.displayName,
                   isActive: _tradeFilter == trade,
-                  onTap: () => setState(
-                    () => _tradeFilter = _tradeFilter == trade ? null : trade,
-                  ),
+                  onTap: () => setState(() {
+                    _tradeFilter = _tradeFilter == trade ? null : trade;
+                    _rebuildFilteredCache();
+                  }),
                 ),
               )),
         ],
@@ -375,16 +384,20 @@ class _EstimateHistoryScreenState extends State<EstimateHistoryScreen> {
           _FilterPill(
             label: 'All',
             isActive: _statusFilter == null,
-            onTap: () => setState(() => _statusFilter = null),
+            onTap: () => setState(() {
+              _statusFilter = null;
+              _rebuildFilteredCache();
+            }),
           ),
           ..._statusOptions.map((status) => Padding(
                 padding: const EdgeInsets.only(left: AppSpacing.sm),
                 child: _FilterPill(
                   label: _statusLabel(status),
                   isActive: _statusFilter == status,
-                  onTap: () => setState(
-                    () => _statusFilter = _statusFilter == status ? null : status,
-                  ),
+                  onTap: () => setState(() {
+                    _statusFilter = _statusFilter == status ? null : status;
+                    _rebuildFilteredCache();
+                  }),
                 ),
               )),
         ],
