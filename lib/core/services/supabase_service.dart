@@ -73,9 +73,6 @@ class SupabaseService {
       'email': email,
       'phone': phone,
       'license_number': licenseNumber,
-      'subscription_status': 'none',
-      'credits_remaining': 0,
-      'total_estimates_generated': 0,
       'created_at': now,
       'updated_at': now,
     };
